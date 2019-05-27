@@ -1,4 +1,3 @@
-// Package query provides to extract the element from a value.
 package query
 
 import (
