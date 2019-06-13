@@ -6,6 +6,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestQuery_Append(t *testing.T) {
+	q := New()
+	q.extractors = make([]Extractor, 0, 1)
+	q1 := q.Key("1")
+	q2 := q.Key("2")
+	if got, expect := q1.String(), ".1"; got != expect {
+		t.Errorf(`expected "%s" but got "%s"`, expect, got)
+	}
+	if got, expect := q2.String(), ".2"; got != expect {
+		t.Errorf(`expected "%s" but got "%s"`, expect, got)
+	}
+}
+
 func TestQuery_Extract(t *testing.T) {
 	type debug struct {
 		Prof map[string][]*keyExtractor

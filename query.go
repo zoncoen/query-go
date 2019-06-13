@@ -24,7 +24,13 @@ func New(opts ...Option) *Query {
 
 // Append appends extractor to q and returns updated q.
 func (q Query) Append(extractor Extractor) *Query {
-	q.extractors = append(q.extractors, extractor)
+	length := len(q.extractors)
+	extractors := make([]Extractor, length+1)
+	for i, e := range q.extractors {
+		extractors[i] = e
+	}
+	extractors[length] = extractor
+	q.extractors = extractors
 	return &q
 }
 
