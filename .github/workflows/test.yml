@@ -22,7 +22,7 @@ jobs:
       run: go test -race ./... -coverprofile=coverage.out -covermode=atomic
     - name: Upload coverage
       if: matrix.os == 'ubuntu-latest' && startsWith(matrix.go-version, '1.16')
-      uses: codecov/codecov-action@v1.5.0
+      uses: codecov/codecov-action@v1.5.2
       with:
         file: ./coverage.out
         fail_ci_if_error: true
