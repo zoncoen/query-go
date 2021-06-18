@@ -49,7 +49,7 @@ func (q Query) Index(i int) *Query {
 
 // Extract extracts the value by q from target.
 func (q *Query) Extract(target interface{}) (interface{}, error) {
-	if q == nil {
+	if q == nil || len(q.extractors) == 0 {
 		return target, nil
 	}
 	v := reflect.ValueOf(target)
@@ -59,12 +59,15 @@ func (q *Query) Extract(target interface{}) (interface{}, error) {
 		if !ok {
 			return nil, errors.Errorf(`"%s" not found`, q.String())
 		}
+		if !v.IsValid() {
+			break
+		}
 		if !v.CanInterface() {
 			return nil, errors.Errorf("%s: can not access unexported field or method", q.String())
 		}
 	}
 	if !v.IsValid() {
-		return nil, nil
+		return nil, errors.Errorf("%s: invalid value", q.String())
 	}
 	return v.Interface(), nil
 }

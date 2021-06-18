@@ -31,6 +31,11 @@ func TestQuery_Extract(t *testing.T) {
 			target   interface{}
 			expected interface{}
 		}{
+			"query is nil": {
+				query:    nil,
+				target:   "value",
+				expected: "value",
+			},
 			"target is nil": {
 				query:    New(),
 				target:   nil,
@@ -77,6 +82,11 @@ func TestQuery_Extract(t *testing.T) {
 			query  *Query
 			target interface{}
 		}{
+			"invalid valud": {
+				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
+					return reflect.Value{}, true
+				})),
+			},
 			"unexported field (can not access)": {
 				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
 					return reflect.ValueOf(test{}).FieldByName("unexported"), true
