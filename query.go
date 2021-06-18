@@ -59,6 +59,9 @@ func (q *Query) Extract(target interface{}) (interface{}, error) {
 		if !ok {
 			return nil, errors.Errorf(`"%s" not found`, q.String())
 		}
+		if !v.CanInterface() {
+			return nil, errors.Errorf("%s: can not access unexported field or method", q.String())
+		}
 	}
 	if !v.IsValid() {
 		return nil, nil
