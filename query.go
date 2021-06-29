@@ -59,15 +59,12 @@ func (q *Query) Extract(target interface{}) (interface{}, error) {
 		if !ok {
 			return nil, errors.Errorf(`"%s" not found`, q.String())
 		}
-		if !v.IsValid() {
-			break
-		}
-		if !v.CanInterface() {
+		if v.IsValid() && !v.CanInterface() {
 			return nil, errors.Errorf("%s: can not access unexported field or method", q.String())
 		}
 	}
 	if !v.IsValid() {
-		return nil, errors.Errorf("%s: invalid value", q.String())
+		return nil, nil
 	}
 	return v.Interface(), nil
 }

@@ -46,6 +46,18 @@ func TestQuery_Extract(t *testing.T) {
 				target:   "value",
 				expected: "value",
 			},
+			"typed nil": {
+				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
+					return reflect.ValueOf((*int)(nil)), true
+				})),
+				expected: (*int)(nil),
+			},
+			"non-typed nil": {
+				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
+					return reflect.ValueOf(nil), true
+				})),
+				expected: nil,
+			},
 			"complex": {
 				query: New().Key("Prof").Key("heap").Index(1).Key("sum%"),
 				target: &debug{
@@ -82,11 +94,6 @@ func TestQuery_Extract(t *testing.T) {
 			query  *Query
 			target interface{}
 		}{
-			"invalid valud": {
-				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
-					return reflect.Value{}, true
-				})),
-			},
 			"unexported field (can not access)": {
 				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
 					return reflect.ValueOf(test{}).FieldByName("unexported"), true
