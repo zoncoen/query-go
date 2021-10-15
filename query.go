@@ -23,13 +23,10 @@ func New(opts ...Option) *Query {
 }
 
 // Append appends extractor to q and returns updated q.
-func (q Query) Append(extractor Extractor) *Query {
-	length := len(q.extractors)
-	extractors := make([]Extractor, length+1)
-	for i, e := range q.extractors {
-		extractors[i] = e
-	}
-	extractors[length] = extractor
+func (q Query) Append(es ...Extractor) *Query {
+	extractors := make([]Extractor, 0, len(q.extractors)+len(es))
+	extractors = append(extractors, q.extractors...)
+	extractors = append(extractors, es...)
 	q.extractors = extractors
 	return &q
 }
@@ -76,6 +73,11 @@ func (q *Query) String() string {
 		b.WriteString(f.String())
 	}
 	return b.String()
+}
+
+// Extractors returns query extractors of q.
+func (q *Query) Extractors() []Extractor {
+	return q.extractors
 }
 
 // An Extractor interface is used by a query to extract the element from a value.
