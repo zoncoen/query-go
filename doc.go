@@ -12,7 +12,7 @@ The query syntax understood by this package when parsing is as follows.
 
 	$           the root element
 	.key        extracts by a key of map or field name of struct ("." can be omitted if the head of query)
+	['key']     same as the ".key" (if the key contains "\" or "'", these characters must be escaped like "\\", "\'")
 	[0]         extracts by a index of array or slice
-	['key']     same as the ".key"
 */
 package query

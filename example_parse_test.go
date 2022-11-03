@@ -7,15 +7,17 @@ import (
 )
 
 type S struct {
-	Maps []map[string]string
+	Maps []map[string]map[string]string
 }
 
 func ExampleParseString() {
-	q, err := query.ParseString("Maps[0].key")
+	q, err := query.ParseString(`$.Maps[0].key['.key\'']`)
 	if err == nil {
 		v, _ := q.Extract(&S{
-			Maps: []map[string]string{
-				{"key": "value"},
+			Maps: []map[string]map[string]string{
+				{"key": map[string]string{
+					".key'": "value",
+				}},
 			},
 		})
 		fmt.Println(v)
