@@ -12,7 +12,7 @@ func TestQuery_Append(t *testing.T) {
 	q.extractors = make([]Extractor, 0, 1)
 	q1 := q.Root().Key("1")
 	q2 := q.Key("2")
-	q3 := q1.Append(q2.Extractors()...).Append(&Key{key: "3"}, &Key{key: "4"})
+	q3 := q1.Append(q2.Extractors()...).Append(&Key{key: "'3.0'"}, &Key{key: "4"})
 	if got, expect := q.String(), ""; got != expect {
 		t.Errorf(`expected "%s" but got "%s"`, expect, got)
 	}
@@ -22,7 +22,7 @@ func TestQuery_Append(t *testing.T) {
 	if got, expect := q2.String(), ".2"; got != expect {
 		t.Errorf(`expected "%s" but got "%s"`, expect, got)
 	}
-	if got, expect := q3.String(), "$.1.2.3.4"; got != expect {
+	if got, expect := q3.String(), "$.1.2['\\'3.0\\''].4"; got != expect {
 		t.Errorf(`expected "%s" but got "%s"`, expect, got)
 	}
 }

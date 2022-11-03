@@ -105,3 +105,40 @@ func TestKey_Extract(t *testing.T) {
 		}
 	})
 }
+
+func TestKey_String(t *testing.T) {
+	tests := map[string]struct {
+		key    string
+		expect string
+	}{
+		"simple": {
+			key:    "aaa",
+			expect: ".aaa",
+		},
+		"[": {
+			key:    "[",
+			expect: "['[']",
+		},
+		".": {
+			key:    ".",
+			expect: "['.']",
+		},
+		"\\": {
+			key:    "\\",
+			expect: "['\\\\']",
+		},
+		"'": {
+			key:    "'",
+			expect: "['\\'']",
+		},
+	}
+	for name, test := range tests {
+		test := test
+		t.Run(name, func(t *testing.T) {
+			k := &Key{key: test.key}
+			if got := k.String(); got != test.expect {
+				t.Errorf("expect %q but got %q", test.expect, got)
+			}
+		})
+	}
+}

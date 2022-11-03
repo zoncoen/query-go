@@ -2,6 +2,7 @@ package query
 
 import (
 	"reflect"
+	"strings"
 )
 
 // KeyExtractor is the interface that wraps the ExtractByKey method.
@@ -62,5 +63,28 @@ func (e *Key) getFieldName(field reflect.StructField) string {
 
 // String returns e as string.
 func (e *Key) String() string {
+	for _, ch := range e.key {
+		switch ch {
+		case '[', '.',
+			'\\', '\'':
+			return quote(e.key)
+		}
+	}
 	return "." + e.key
+}
+
+func quote(s string) string {
+	var b strings.Builder
+	b.WriteString("['")
+	for _, ch := range s {
+		switch ch {
+		case '\\', '\'':
+			b.WriteRune('\\')
+			fallthrough
+		default:
+			b.WriteRune(ch)
+		}
+	}
+	b.WriteString("']")
+	return b.String()
 }
