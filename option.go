@@ -12,6 +12,13 @@ func CaseInsensitive() Option {
 	}
 }
 
+// ExtractByStructTag returns the Option to allow extracting by struct tag.
+func ExtractByStructTag(tagNames ...string) Option {
+	return func(q *Query) {
+		q.structTags = tagNames
+	}
+}
+
 // CustomStructFieldNameGetter returns the Option to set f as custom function which gets struct field name.
 // f is called by Key.Extract to get struct field name, if the target value is a struct.
 func CustomStructFieldNameGetter(f func(f reflect.StructField) string) Option {

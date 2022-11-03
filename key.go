@@ -17,6 +17,7 @@ type KeyExtractor interface {
 type Key struct {
 	key             string
 	caseInsensitive bool
+	structTags      []string
 	fieldNameGetter func(f reflect.StructField) string
 }
 
@@ -51,16 +52,40 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 			}
 		}
 	case reflect.Struct:
+		inlines := []int{}
 		for i := 0; i < v.Type().NumField(); i++ {
 			field := v.Type().FieldByIndex([]int{i})
-			if e.caseInsensitive {
-				if strings.ToLower(e.getFieldName(field)) == strings.ToLower(e.key) {
-					return v.FieldByIndex([]int{i}), true
+			fieldNames := []string{}
+			for _, t := range e.structTags {
+				if s := field.Tag.Get(t); s != "" {
+					name, opts, _ := strings.Cut(s, ",")
+					if name != "" {
+						fieldNames = append(fieldNames, name)
+					}
+					for _, o := range strings.Split(opts, ",") {
+						if o == "inline" {
+							inlines = append(inlines, i)
+						}
+					}
 				}
-			} else {
-				if e.getFieldName(field) == e.key {
-					return v.FieldByIndex([]int{i}), true
+			}
+			fieldNames = append(fieldNames, e.getFieldName(field))
+			for _, name := range fieldNames {
+				if e.caseInsensitive {
+					if strings.ToLower(name) == strings.ToLower(e.key) {
+						return v.FieldByIndex([]int{i}), true
+					}
+				} else {
+					if name == e.key {
+						return v.FieldByIndex([]int{i}), true
+					}
 				}
+			}
+		}
+		for _, i := range inlines {
+			val, ok := e.extract(v.FieldByIndex([]int{i}))
+			if ok {
+				return val, true
 			}
 		}
 	}

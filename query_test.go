@@ -86,6 +86,11 @@ func TestQuery_Extract(t *testing.T) {
 				target:   map[string]string{"Foo": "aaa"},
 				expected: "aaa",
 			},
+			"ExtractByStructTag": {
+				query:    New(CaseInsensitive(), ExtractByStructTag("json")).Key("FOO_BAR"),
+				target:   &testTags{FooBar: "aaa"},
+				expected: "aaa",
+			},
 		}
 
 		for name, test := range tests {

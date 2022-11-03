@@ -11,6 +11,7 @@ import (
 type Query struct {
 	extractors                  []Extractor
 	caseInsensitive             bool
+	structTags                  []string
 	customStructFieldNameGetter func(f reflect.StructField) string
 	hasExplicitRoot             bool
 }
@@ -44,6 +45,7 @@ func (q Query) Key(k string) *Query {
 	return q.Append(&Key{
 		key:             k,
 		caseInsensitive: q.caseInsensitive,
+		structTags:      q.structTags,
 		fieldNameGetter: q.customStructFieldNameGetter,
 	})
 }
