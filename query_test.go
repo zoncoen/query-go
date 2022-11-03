@@ -81,6 +81,11 @@ func TestQuery_Extract(t *testing.T) {
 				target:   map[string]string{"foo": "aaa"},
 				expected: "aaa",
 			},
+			"CaseInsensitive": {
+				query:    New(CaseInsensitive()).Key("foo"),
+				target:   map[string]string{"Foo": "aaa"},
+				expected: "aaa",
+			},
 		}
 
 		for name, test := range tests {

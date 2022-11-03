@@ -10,6 +10,7 @@ import (
 // Query represents a query to extract the element from a value.
 type Query struct {
 	extractors                  []Extractor
+	caseInsensitive             bool
 	customStructFieldNameGetter func(f reflect.StructField) string
 	hasExplicitRoot             bool
 }
@@ -42,6 +43,7 @@ func (q Query) Root() *Query {
 func (q Query) Key(k string) *Query {
 	return q.Append(&Key{
 		key:             k,
+		caseInsensitive: q.caseInsensitive,
 		fieldNameGetter: q.customStructFieldNameGetter,
 	})
 }

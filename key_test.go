@@ -22,12 +22,21 @@ func (f *keyExtractor) ExtractByKey(_ string) (interface{}, bool) {
 func TestKey_Extract(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		tests := map[string]struct {
-			key    string
-			v      interface{}
-			expect interface{}
+			key             string
+			caseInsensitive bool
+			v               interface{}
+			expect          interface{}
 		}{
 			"map[string]string": {
 				key: "key",
+				v: map[string]string{
+					"key": "value",
+				},
+				expect: "value",
+			},
+			"map[string]string (case-insensitive)": {
+				key:             "KEY",
+				caseInsensitive: true,
 				v: map[string]string{
 					"key": "value",
 				},
@@ -46,6 +55,12 @@ func TestKey_Extract(t *testing.T) {
 				v:      http.Request{Method: http.MethodGet},
 				expect: http.MethodGet,
 			},
+			"struct (case-insensitive)": {
+				key:             "method",
+				caseInsensitive: true,
+				v:               http.Request{Method: http.MethodGet},
+				expect:          http.MethodGet,
+			},
 			"struct pointer": {
 				key:    "Method",
 				v:      &http.Request{Method: http.MethodGet},
@@ -60,7 +75,10 @@ func TestKey_Extract(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				e := &Key{key: test.key}
+				e := &Key{
+					key:             test.key,
+					caseInsensitive: test.caseInsensitive,
+				}
 				v, ok := e.Extract(reflect.ValueOf(test.v))
 				if !ok {
 					t.Fatal("not found")
@@ -82,7 +100,9 @@ func TestKey_Extract(t *testing.T) {
 			},
 			"key not found": {
 				key: "key",
-				v:   map[string]string{},
+				v: map[string]string{
+					"Key": "case sensitive",
+				},
 			},
 			"field not found": {
 				key: "Invalid",

@@ -16,6 +16,7 @@ type KeyExtractor interface {
 // Key represents an extractor to access the value by key.
 type Key struct {
 	key             string
+	caseInsensitive bool
 	fieldNameGetter func(f reflect.StructField) string
 }
 
@@ -39,15 +40,27 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 	case reflect.Map:
 		for _, k := range v.MapKeys() {
 			k := elem(k)
-			if k.String() == e.key {
-				return v.MapIndex(k), true
+			if e.caseInsensitive {
+				if strings.ToLower(k.String()) == strings.ToLower(e.key) {
+					return v.MapIndex(k), true
+				}
+			} else {
+				if k.String() == e.key {
+					return v.MapIndex(k), true
+				}
 			}
 		}
 	case reflect.Struct:
 		for i := 0; i < v.Type().NumField(); i++ {
 			field := v.Type().FieldByIndex([]int{i})
-			if e.getFieldName(field) == e.key {
-				return v.FieldByIndex([]int{i}), true
+			if e.caseInsensitive {
+				if strings.ToLower(e.getFieldName(field)) == strings.ToLower(e.key) {
+					return v.FieldByIndex([]int{i}), true
+				}
+			} else {
+				if e.getFieldName(field) == e.key {
+					return v.FieldByIndex([]int{i}), true
+				}
 			}
 		}
 	}
