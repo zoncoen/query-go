@@ -10,10 +10,8 @@ import (
 	"github.com/zoncoen/query-go/token"
 )
 
-var (
-	// eof represents invalid code points.
-	eof = unicode.ReplacementChar
-)
+// eof represents invalid code points.
+var eof = unicode.ReplacementChar
 
 type scanner struct {
 	r              *bufio.Reader
@@ -56,8 +54,10 @@ func (s *scanner) scan() (int, token.Token, string) {
 	}
 	if s.isReadingIndex {
 		switch ch {
+		case '\'':
+			return s.scanQuoteString('\'')
 		case '"':
-			return s.scanQuoteString()
+			return s.scanQuoteString('"')
 		case ']':
 			s.isReadingIndex = false
 			return s.pos - 1, token.RBRACK, "]"
@@ -100,8 +100,9 @@ scan:
 	return s.pos - b.Len(), token.STRING, b.String()
 }
 
-func (s *scanner) scanQuoteString() (int, token.Token, string) {
+func (s *scanner) scanQuoteString(term rune) (int, token.Token, string) {
 	var b strings.Builder
+	var backslashes int
 scan:
 	for {
 		ch := s.read()
@@ -109,13 +110,22 @@ scan:
 		case eof:
 			// string not terminated
 			return s.pos, token.ILLEGAL, ""
-		case '"':
+		case '\\':
+			escaped := s.read()
+			switch escaped {
+			case '\\', term:
+				b.WriteRune(escaped)
+				backslashes++
+			default:
+				return s.pos - 2, token.ILLEGAL, ""
+			}
+		case term:
 			break scan
 		default:
 			b.WriteRune(ch)
 		}
 	}
-	return s.pos - b.Len() - 2, token.STRING, b.String()
+	return s.pos - b.Len() - backslashes - 2, token.STRING, b.String()
 }
 
 func (s *scanner) scanInt(head rune) (int, token.Token, string) {

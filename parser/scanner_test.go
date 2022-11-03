@@ -125,7 +125,27 @@ func TestScanner_Scan(t *testing.T) {
 					},
 				},
 			},
-			"[STRING]": {
+			"['STRING']": {
+				src: `['test']`,
+				expected: []result{
+					{
+						pos: 1,
+						tok: token.LBRACK,
+						lit: "[",
+					},
+					{
+						pos: 2,
+						tok: token.STRING,
+						lit: "test",
+					},
+					{
+						pos: 8,
+						tok: token.RBRACK,
+						lit: "]",
+					},
+				},
+			},
+			`["STRING"]`: {
 				src: `["test"]`,
 				expected: []result{
 					{
@@ -146,7 +166,7 @@ func TestScanner_Scan(t *testing.T) {
 				},
 			},
 			"STRING[INT].STRING[STRING]": {
-				src: `a[10].b["c"]`,
+				src: `a[10].b['c\'']`,
 				expected: []result{
 					{
 						pos: 1,
@@ -186,10 +206,10 @@ func TestScanner_Scan(t *testing.T) {
 					{
 						pos: 9,
 						tok: token.STRING,
-						lit: "c",
+						lit: "c'",
 					},
 					{
-						pos: 12,
+						pos: 14,
 						tok: token.RBRACK,
 						lit: "]",
 					},
@@ -244,6 +264,11 @@ func TestScanner_Scan(t *testing.T) {
 			"string not terminated": {
 				src: `["test]`,
 				pos: 8,
+				lit: "",
+			},
+			"invalid escape": {
+				src: `['\a']`,
+				pos: 3,
 				lit: "",
 			},
 		}
