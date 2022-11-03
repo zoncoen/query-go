@@ -11,6 +11,7 @@ import (
 type Query struct {
 	extractors                  []Extractor
 	customStructFieldNameGetter func(f reflect.StructField) string
+	hasExplicitRoot             bool
 }
 
 // New returns a new query.
@@ -28,6 +29,12 @@ func (q Query) Append(es ...Extractor) *Query {
 	extractors = append(extractors, q.extractors...)
 	extractors = append(extractors, es...)
 	q.extractors = extractors
+	return &q
+}
+
+// Root marks that q has an explicit root operator $.
+func (q Query) Root() *Query {
+	q.hasExplicitRoot = true
 	return &q
 }
 
@@ -69,6 +76,9 @@ func (q *Query) Extract(target interface{}) (interface{}, error) {
 // String returns q as string.
 func (q *Query) String() string {
 	var b strings.Builder
+	if q.hasExplicitRoot {
+		b.WriteString("$")
+	}
 	for _, f := range q.extractors {
 		b.WriteString(f.String())
 	}

@@ -8,6 +8,7 @@ const (
 	ILLEGAL Token = iota
 	EOF
 
+	ROOT   // $
 	STRING // "text"
 	INT    // 123
 
@@ -21,6 +22,8 @@ func (t Token) String() string {
 	switch t {
 	case EOF:
 		return "EOF"
+	case ROOT:
+		return "$"
 	case STRING:
 		return "string"
 	case INT:

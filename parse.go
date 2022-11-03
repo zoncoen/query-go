@@ -29,6 +29,8 @@ func buildQuery(q *Query, node ast.Node) (*Query, error) {
 	}
 	var err error
 	switch n := node.(type) {
+	case *ast.Root:
+		q = q.Root()
 	case *ast.Selector:
 		q, err = buildQuery(q, n.X)
 		if err == nil {
