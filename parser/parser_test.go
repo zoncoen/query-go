@@ -18,6 +18,22 @@ func TestParser_Parse(t *testing.T) {
 				src:      "",
 				expected: nil,
 			},
+			"a root": {
+				src: "$",
+				expected: &ast.Root{
+					ValuePos: 1,
+				},
+			},
+			"root selector": {
+				src: "$.selector",
+				expected: &ast.Selector{
+					ValuePos: 2,
+					X: &ast.Root{
+						ValuePos: 1,
+					},
+					Sel: "selector",
+				},
+			},
 			"a selector": {
 				src: ".selector",
 				expected: &ast.Selector{
@@ -30,6 +46,16 @@ func TestParser_Parse(t *testing.T) {
 				expected: &ast.Selector{
 					ValuePos: 1,
 					Sel:      "selector",
+				},
+			},
+			"root index": {
+				src: "$[0]",
+				expected: &ast.Index{
+					ValuePos: 2,
+					X: &ast.Root{
+						ValuePos: 1,
+					},
+					Index: 0,
 				},
 			},
 			"an index": {

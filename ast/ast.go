@@ -7,6 +7,11 @@ type Node interface {
 }
 
 type (
+	// A Root node represents a root expression.
+	Root struct {
+		ValuePos int
+	}
+
 	// A Selector node represents an expression followed by a selector.
 	Selector struct {
 		ValuePos int
@@ -23,5 +28,6 @@ type (
 )
 
 // Pos returns the position of first character belonging to the node.
+func (e *Root) Pos() int     { return e.ValuePos }
 func (e *Selector) Pos() int { return e.ValuePos }
 func (e *Index) Pos() int    { return e.ValuePos }

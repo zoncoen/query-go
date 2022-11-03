@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zoncoen/query-go)](https://goreportcard.com/report/github.com/zoncoen/query-go)
 ![LICENSE](https://img.shields.io/github/license/zoncoen/query-go.svg)
 
-This is a Go package to extract value by a query string like `key[0].key["key"]`.
+This is a Go package to extract element from a Go value by a query string like `$.key[0].key["key"]`.
 See usage and example in [GoDoc](https://godoc.org/github.com/zoncoen/query-go).
 
 ## Basic Usage
@@ -14,7 +14,7 @@ See usage and example in [GoDoc](https://godoc.org/github.com/zoncoen/query-go).
 `ParseString` parses a query string and returns the query which extracts the value.
 
 ```go
-q, err := query.ParseString(`key[0].key["key"]`)
+q, err := query.ParseString(`$.key[0].key["key"]`)
 v, err := q.Extract(target)
 ```
 
@@ -23,6 +23,7 @@ v, err := q.Extract(target)
 The query syntax understood by this package when parsing is as follows.
 
 ```txt
+$           the root element
 .key        extracts by a key of map or field name of struct ("." can be omitted if the head of query)
 [0]         extracts by a index of array or slice
 ["key"]     same as the ".key"

@@ -68,6 +68,8 @@ func (s *scanner) scan() (int, token.Token, string) {
 		return s.pos - 1, token.ILLEGAL, string(ch)
 	}
 	switch ch {
+	case '$':
+		return s.pos - 1, token.ROOT, "$"
 	case '.':
 		return s.pos - 1, token.PERIOD, "."
 	case '[':

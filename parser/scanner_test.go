@@ -75,6 +75,16 @@ func TestScanner_Scan(t *testing.T) {
 				src:      "",
 				expected: []result{},
 			},
+			"ROOT": {
+				src: "$",
+				expected: []result{
+					{
+						pos: 1,
+						tok: token.ROOT,
+						lit: "$",
+					},
+				},
+			},
 			"STRING": {
 				src: `test`,
 				expected: []result{

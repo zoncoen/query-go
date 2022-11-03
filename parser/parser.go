@@ -66,6 +66,11 @@ func (p *Parser) parseFirst() ast.Node {
 	p.next()
 	var node ast.Node
 	switch p.tok {
+	case token.ROOT:
+		node = &ast.Root{
+			ValuePos: p.pos,
+		}
+		p.next()
 	case token.STRING:
 		node = &ast.Selector{
 			ValuePos: p.pos,
@@ -86,7 +91,7 @@ func (p *Parser) parseFirst() ast.Node {
 	case token.EOF:
 		return nil
 	default:
-		p.expect(token.STRING, token.LBRACK)
+		p.expect(token.ROOT, token.STRING, token.LBRACK)
 	}
 	return node
 }

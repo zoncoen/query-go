@@ -20,6 +20,10 @@ func TestParseString(t *testing.T) {
 				src:      "a[0][1].b",
 				expected: New().Key("a").Index(0).Index(1).Key("b"),
 			},
+			"$.key[index][index].key": {
+				src:      "$.a[0][1].b",
+				expected: New().Root().Key("a").Index(0).Index(1).Key("b"),
+			},
 		}
 		opt := cmp.AllowUnexported(Query{}, Key{}, Index{})
 		for name, test := range tests {
