@@ -81,6 +81,9 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 					}
 				}
 			}
+			if field.Anonymous {
+				inlines = append(inlines, i)
+			}
 		}
 		for _, i := range inlines {
 			val, ok := e.extract(v.FieldByIndex([]int{i}))

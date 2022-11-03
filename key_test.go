@@ -20,8 +20,13 @@ func (f *keyExtractor) ExtractByKey(_ string) (interface{}, bool) {
 }
 
 type testTags struct {
-	FooBar string            `json:"foo_bar" yaml:"fooBar,omitempty"`
-	M      map[string]string `json:",inline"`
+	FooBar string `json:"foo_bar" yaml:"fooBar,omitempty"`
+	AnonymousField
+	M map[string]string `json:",inline"`
+}
+
+type AnonymousField struct {
+	S string
 }
 
 func TestKey_Extract(t *testing.T) {
@@ -66,6 +71,28 @@ func TestKey_Extract(t *testing.T) {
 				caseInsensitive: true,
 				v:               http.Request{Method: http.MethodGet},
 				expect:          http.MethodGet,
+			},
+			"struct (anonymous field)": {
+				key:             "AnonymousField",
+				caseInsensitive: true,
+				v: testTags{
+					AnonymousField: AnonymousField{
+						S: "aaa",
+					},
+				},
+				expect: AnonymousField{
+					S: "aaa",
+				},
+			},
+			"struct (anonymous field's field)": {
+				key:             "S",
+				caseInsensitive: true,
+				v: testTags{
+					AnonymousField: AnonymousField{
+						S: "aaa",
+					},
+				},
+				expect: "aaa",
 			},
 			"struct (strcut tag)": {
 				key:        "foo_bar",
@@ -151,6 +178,32 @@ func TestKey_Extract(t *testing.T) {
 				structTags: []string{"json", "yaml"},
 				v: testTags{
 					FooBar: "xxx",
+				},
+			},
+			"struct (anonymous field's field)": {
+				key: "s",
+				v: testTags{
+					AnonymousField: AnonymousField{
+						S: "aaa",
+					},
+				},
+			},
+			"inline": {
+				key:        "AAA",
+				structTags: []string{"json", "yaml"},
+				v: testTags{
+					M: map[string]string{
+						"aaa": "xxx",
+					},
+				},
+			},
+			"inline (not contains json tag)": {
+				key:        "aaa",
+				structTags: []string{"yaml"},
+				v: testTags{
+					M: map[string]string{
+						"aaa": "xxx",
+					},
 				},
 			},
 		}
