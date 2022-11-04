@@ -1,1 +1,3 @@
 .envrc
+go.work
+go.work.sum
