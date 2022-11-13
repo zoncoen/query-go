@@ -10,6 +10,9 @@ import (
 // Query represents a query to extract the element from a value.
 type Query struct {
 	extractors                  []Extractor
+	caseInsensitive             bool
+	structTags                  []string
+	customExtractFuncs          []func(ExtractFunc) ExtractFunc
 	customStructFieldNameGetter func(f reflect.StructField) string
 	hasExplicitRoot             bool
 }
@@ -42,6 +45,8 @@ func (q Query) Root() *Query {
 func (q Query) Key(k string) *Query {
 	return q.Append(&Key{
 		key:             k,
+		caseInsensitive: q.caseInsensitive,
+		structTags:      q.structTags,
 		fieldNameGetter: q.customStructFieldNameGetter,
 	})
 }
@@ -57,9 +62,13 @@ func (q *Query) Extract(target interface{}) (interface{}, error) {
 		return target, nil
 	}
 	v := reflect.ValueOf(target)
-	for _, f := range q.extractors {
+	for _, e := range q.extractors {
+		f := e.Extract
+		for i := len(q.customExtractFuncs) - 1; i >= 0; i-- {
+			f = q.customExtractFuncs[i](f)
+		}
 		var ok bool
-		v, ok = f.Extract(v)
+		v, ok = f(v)
 		if !ok {
 			return nil, errors.Errorf(`"%s" not found`, q.String())
 		}
@@ -95,3 +104,6 @@ type Extractor interface {
 	Extract(v reflect.Value) (reflect.Value, bool)
 	String() string
 }
+
+// ExtractFunc represents a function to extracts a value.
+type ExtractFunc func(v reflect.Value) (reflect.Value, bool)

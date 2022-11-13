@@ -2,6 +2,7 @@ package query
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -81,6 +82,65 @@ func TestQuery_Extract(t *testing.T) {
 				target:   map[string]string{"foo": "aaa"},
 				expected: "aaa",
 			},
+			"CaseInsensitive": {
+				query:    New(CaseInsensitive()).Key("foo"),
+				target:   map[string]string{"Foo": "aaa"},
+				expected: "aaa",
+			},
+			"ExtractByStructTag": {
+				query:    New(CaseInsensitive(), ExtractByStructTag("json")).Key("FOO_BAR"),
+				target:   &testTags{FooBar: "aaa"},
+				expected: "aaa",
+			},
+			"CustomExtractFunc": {
+				query: New(
+					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
+						return func(v reflect.Value) (reflect.Value, bool) {
+							vv, ok := f(v)
+							if ok {
+								if vv.Kind() == reflect.String && vv.CanInterface() {
+									return reflect.ValueOf("aaa" + vv.Interface().(string)), true
+								}
+							}
+							return vv, true
+						}
+					}),
+					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
+						return func(v reflect.Value) (reflect.Value, bool) {
+							return reflect.ValueOf("bbb"), true
+						}
+					}),
+				).Index(0),
+				expected: "aaabbb",
+			},
+			"use CustomExtractFunc instead of CustomStructFieldNameGetter": {
+				query: New(
+					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
+						return func(v reflect.Value) (reflect.Value, bool) {
+							v = elem(v)
+							if v.Kind() == reflect.Struct {
+								m := map[string]interface{}{}
+								for i := 0; i < v.Type().NumField(); i++ {
+									field := v.Type().FieldByIndex([]int{i})
+									if s := field.Tag.Get("json"); s != "" {
+										name, _, _ := strings.Cut(s, ",")
+										if name != "" {
+											f := v.FieldByIndex([]int{i})
+											if f.CanInterface() {
+												m[strings.ToUpper(name)] = f.Interface()
+											}
+										}
+									}
+								}
+								return f(reflect.ValueOf(m))
+							}
+							return f(v)
+						}
+					}),
+				).Key("FOO_BAR"),
+				target:   &testTags{FooBar: "aaa"},
+				expected: "aaa",
+			},
 		}
 
 		for name, test := range tests {
@@ -110,6 +170,17 @@ func TestQuery_Extract(t *testing.T) {
 				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
 					return reflect.ValueOf(test{}).FieldByName("unexported"), true
 				})),
+			},
+			"CustomExtractFunc returns not ok": {
+				query: New(
+					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
+						return func(v reflect.Value) (reflect.Value, bool) {
+							vv, _ := f(v)
+							return vv, false
+						}
+					}),
+				).Index(0),
+				target: []string{"a"},
 			},
 		}
 
