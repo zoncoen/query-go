@@ -53,6 +53,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 		}
 	case reflect.Struct:
 		inlines := []int{}
+		var unexported *reflect.Value
 		for i := 0; i < v.Type().NumField(); i++ {
 			field := v.Type().FieldByIndex([]int{i})
 			fieldNames := []string{}
@@ -71,13 +72,16 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 			}
 			fieldNames = append(fieldNames, e.getFieldName(field))
 			for _, name := range fieldNames {
+				n, k := name, e.key
 				if e.caseInsensitive {
-					if strings.ToLower(name) == strings.ToLower(e.key) {
-						return v.FieldByIndex([]int{i}), true
-					}
-				} else {
-					if name == e.key {
-						return v.FieldByIndex([]int{i}), true
+					n, k = strings.ToLower(n), strings.ToLower(k)
+				}
+				if n == k {
+					val := v.FieldByIndex([]int{i})
+					if isUnexportedField(val) {
+						unexported = &val
+					} else {
+						return val, true
 					}
 				}
 			}
@@ -88,8 +92,15 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 		for _, i := range inlines {
 			val, ok := e.extract(v.FieldByIndex([]int{i}))
 			if ok {
-				return val, true
+				if isUnexportedField(val) {
+					unexported = &val
+				} else {
+					return val, true
+				}
 			}
+		}
+		if unexported != nil {
+			return *unexported, true
 		}
 	}
 	return reflect.Value{}, false
@@ -100,6 +111,13 @@ func (e *Key) getFieldName(field reflect.StructField) string {
 		return e.fieldNameGetter(field)
 	}
 	return field.Name
+}
+
+func isUnexportedField(v reflect.Value) bool {
+	if v.IsValid() && !v.CanInterface() {
+		return true
+	}
+	return false
 }
 
 // String returns e as string.

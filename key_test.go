@@ -23,6 +23,9 @@ type testTags struct {
 	FooBar string `json:"foo_bar" yaml:"fooBar,omitempty"`
 	AnonymousField
 	M map[string]string `json:",inline"`
+
+	state struct{}
+	State string `json:"state"`
 }
 
 type AnonymousField struct {
@@ -119,6 +122,14 @@ func TestKey_Extract(t *testing.T) {
 					},
 				},
 				expect: "xxx",
+			},
+			"struct (fallthrough unexported field)": {
+				key:        "state",
+				structTags: []string{"json"},
+				v: testTags{
+					State: "ready",
+				},
+				expect: "ready",
 			},
 			"struct pointer": {
 				key:    "Method",
