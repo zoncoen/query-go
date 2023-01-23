@@ -1,3 +1,6 @@
+/*
+Package yaml provides a function to extract values from yaml.MapSlice.
+*/
 package yaml
 
 import (
@@ -9,14 +12,22 @@ import (
 	"github.com/zoncoen/query-go"
 )
 
-var (
-	mapSliceType = reflect.TypeOf(yaml.MapSlice{})
-)
+var mapSliceType = reflect.TypeOf(yaml.MapSlice{})
 
-// MapSliceExtractFunc is a function for query.CustomExtractFunc option.
+// MapSliceExtractFunc is a function for query.CustomExtractFunc option to extract values from yaml.MapSlice.
 func MapSliceExtractFunc(caseInsensitive bool) func(query.ExtractFunc) query.ExtractFunc {
 	return func(f query.ExtractFunc) query.ExtractFunc {
-		return func(v reflect.Value) (reflect.Value, bool) {
+		return func(in reflect.Value) (reflect.Value, bool) {
+			v := in
+			for {
+				if v.IsValid() {
+					if k := v.Kind(); k == reflect.Interface || k == reflect.Pointer {
+						v = v.Elem()
+						continue
+					}
+				}
+				break
+			}
 			switch v.Kind() {
 			case reflect.Slice:
 				if v.Type() == mapSliceType {
@@ -31,7 +42,7 @@ func MapSliceExtractFunc(caseInsensitive bool) func(query.ExtractFunc) query.Ext
 					}
 				}
 			}
-			return f(v)
+			return f(in)
 		}
 	}
 }

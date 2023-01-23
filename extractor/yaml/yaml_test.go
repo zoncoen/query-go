@@ -40,11 +40,37 @@ func TestMapSliceExtractFunc(t *testing.T) {
 				},
 				expect: "aaa",
 			},
+			"[]interface{yaml.MapSlice}": {
+				query: query.New(
+					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+				).Index(0).Key("foo"),
+				v: []interface{}{
+					yaml.MapSlice{
+						yaml.MapItem{
+							Key:   "foo",
+							Value: "aaa",
+						},
+					},
+				},
+				expect: "aaa",
+			},
+			"*yaml.MapSlice": {
+				query: query.New(
+					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+				).Key("foo"),
+				v: &yaml.MapSlice{
+					yaml.MapItem{
+						Key:   "foo",
+						Value: "aaa",
+					},
+				},
+				expect: "aaa",
+			},
 			"not yaml.MapSlice": {
 				query: query.New(
 					query.CustomExtractFunc(MapSliceExtractFunc(false)),
 				).Index(1),
-				v:      []int{1, 2},
+				v:      []interface{}{1, 2},
 				expect: 2,
 			},
 			"not slice": {
