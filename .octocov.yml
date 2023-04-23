@@ -15,13 +15,13 @@ codeToTestRatio:
   badge:
     path: docs/ratio.svg
 testExecutionTime:
-  if: true
-  badge:
-    path: docs/time.svg
+  if: false
 diff:
   datastores:
     - artifact://${GITHUB_REPOSITORY}
 comment:
+  if: false
+body:
   if: is_pull_request
 summary:
   if: true
@@ -30,3 +30,4 @@ report:
   datastores:
     - artifact://${GITHUB_REPOSITORY}
 push:
+  comment: 'chore(docs): update badges'
