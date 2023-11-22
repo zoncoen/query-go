@@ -27,3 +27,15 @@ updates:
     assignees:
       - "zoncoen"
 
+  - package-ecosystem: "gomod"
+    directory: "/extractor/yaml"
+    schedule:
+      interval: "daily"
+      time: "12:00"
+      timezone: "Asia/Tokyo"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    open-pull-requests-limit: 10
+    assignees:
+      - "zoncoen"
