@@ -57,11 +57,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: query-coverage-report
         path: ./coverage.out
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: query-extractor-yaml-coverage-report
         path: ./extractor/yaml/coverage.out
