@@ -22,7 +22,8 @@ func (f *keyExtractor) ExtractByKey(_ string) (interface{}, bool) {
 type testTags struct {
 	FooBar string `json:"foo_bar" yaml:"fooBar,omitempty"`
 	AnonymousField
-	M map[string]string `json:",inline"`
+	M      map[string]string `json:",inline"`
+	Inline map[string]string
 
 	state struct{}
 	State string `json:"state"`
@@ -38,6 +39,7 @@ func TestKey_Extract(t *testing.T) {
 			key             string
 			caseInsensitive bool
 			structTags      []string
+			isInlineFuncs   []func(reflect.StructField) bool
 			v               interface{}
 			expect          interface{}
 		}{
@@ -123,6 +125,23 @@ func TestKey_Extract(t *testing.T) {
 				},
 				expect: "xxx",
 			},
+			"struct (custom inline func)": {
+				key: "aaa",
+				isInlineFuncs: []func(reflect.StructField) bool{
+					func(f reflect.StructField) bool {
+						return f.Name == "Inline"
+					},
+				},
+				v: testTags{
+					M: map[string]string{
+						"aaa": "xxx",
+					},
+					Inline: map[string]string{
+						"aaa": "yyy",
+					},
+				},
+				expect: "yyy",
+			},
 			"struct (fallthrough unexported field)": {
 				key:        "state",
 				structTags: []string{"json"},
@@ -149,6 +168,7 @@ func TestKey_Extract(t *testing.T) {
 					key:             test.key,
 					caseInsensitive: test.caseInsensitive,
 					structTags:      test.structTags,
+					isInlineFuncs:   test.isInlineFuncs,
 				}
 				v, ok := e.Extract(reflect.ValueOf(test.v))
 				if !ok {
@@ -162,9 +182,10 @@ func TestKey_Extract(t *testing.T) {
 	})
 	t.Run("not found", func(t *testing.T) {
 		tests := map[string]struct {
-			key        string
-			structTags []string
-			v          interface{}
+			key           string
+			structTags    []string
+			isInlineFuncs []func(reflect.StructField) bool
+			v             interface{}
 		}{
 			"target is nil": {
 				key: "key",
@@ -214,6 +235,17 @@ func TestKey_Extract(t *testing.T) {
 				v: testTags{
 					M: map[string]string{
 						"aaa": "xxx",
+					},
+				},
+			},
+			"inline (no custom inline func)": {
+				key: "aaa",
+				v: testTags{
+					M: map[string]string{
+						"aaa": "xxx",
+					},
+					Inline: map[string]string{
+						"aaa": "yyy",
 					},
 				},
 			},
