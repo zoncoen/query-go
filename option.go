@@ -15,7 +15,7 @@ func CaseInsensitive() Option {
 // ExtractByStructTag returns the Option to allow extracting by struct tag.
 func ExtractByStructTag(tagNames ...string) Option {
 	return func(q *Query) {
-		q.structTags = tagNames
+		q.structTags = append(q.structTags, tagNames...)
 	}
 }
 
@@ -33,5 +33,12 @@ func CustomExtractFunc(f func(ExtractFunc) ExtractFunc) Option {
 func CustomStructFieldNameGetter(f func(f reflect.StructField) string) Option {
 	return func(q *Query) {
 		q.customStructFieldNameGetter = f
+	}
+}
+
+// CustomIsInlineStructFieldFunc returns the Option to customize the behavior of extractors.
+func CustomIsInlineStructFieldFunc(f func(reflect.StructField) bool) Option {
+	return func(q *Query) {
+		q.customIsInlineFuncs = append(q.customIsInlineFuncs, f)
 	}
 }

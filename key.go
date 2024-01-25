@@ -19,6 +19,7 @@ type Key struct {
 	caseInsensitive bool
 	structTags      []string
 	fieldNameGetter func(f reflect.StructField) string
+	isInlineFuncs   []func(reflect.StructField) bool
 }
 
 // Extract extracts the value from v by key.
@@ -57,6 +58,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 		for i := 0; i < v.Type().NumField(); i++ {
 			field := v.Type().FieldByIndex([]int{i})
 			fieldNames := []string{}
+			var inline bool
 			for _, t := range e.structTags {
 				if s := field.Tag.Get(t); s != "" {
 					name, opts, _ := strings.Cut(s, ",")
@@ -65,7 +67,8 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 					}
 					for _, o := range strings.Split(opts, ",") {
 						if o == "inline" {
-							inlines = append(inlines, i)
+							inline = true
+							break
 						}
 					}
 				}
@@ -86,6 +89,16 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 				}
 			}
 			if field.Anonymous {
+				inline = true
+			}
+			for _, f := range e.isInlineFuncs {
+				f := f
+				if f(field) {
+					inlines = append(inlines, i)
+					break
+				}
+			}
+			if inline {
 				inlines = append(inlines, i)
 			}
 		}
@@ -124,8 +137,7 @@ func isUnexportedField(v reflect.Value) bool {
 func (e *Key) String() string {
 	for _, ch := range e.key {
 		switch ch {
-		case '[', '.',
-			'\\', '\'':
+		case '[', '.', '\\', '\'':
 			return quote(e.key)
 		}
 	}

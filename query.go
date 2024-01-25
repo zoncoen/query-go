@@ -14,6 +14,7 @@ type Query struct {
 	structTags                  []string
 	customExtractFuncs          []func(ExtractFunc) ExtractFunc
 	customStructFieldNameGetter func(f reflect.StructField) string
+	customIsInlineFuncs         []func(reflect.StructField) bool
 	hasExplicitRoot             bool
 }
 
@@ -48,6 +49,7 @@ func (q Query) Key(k string) *Query {
 		caseInsensitive: q.caseInsensitive,
 		structTags:      q.structTags,
 		fieldNameGetter: q.customStructFieldNameGetter,
+		isInlineFuncs:   q.customIsInlineFuncs,
 	})
 }
 
