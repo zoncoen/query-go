@@ -39,3 +39,16 @@ updates:
     open-pull-requests-limit: 10
     assignees:
       - "zoncoen"
+
+  - package-ecosystem: "gomod"
+    directory: "/extractor/protobuf"
+    schedule:
+      interval: "daily"
+      time: "12:00"
+      timezone: "Asia/Tokyo"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    open-pull-requests-limit: 10
+    assignees:
+      - "zoncoen"
