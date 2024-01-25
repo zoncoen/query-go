@@ -18,7 +18,8 @@ func ExampleMapSliceExtractFunc() {
 	}
 
 	q := query.New(
-		query.CustomExtractFunc(yamlextractor.MapSliceExtractFunc(true)),
+		query.CaseInsensitive(),
+		query.CustomExtractFunc(yamlextractor.MapSliceExtractFunc()),
 	).Index(0).Key("FOO")
 	got, err := q.Extract(v)
 	if err != nil {

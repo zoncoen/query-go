@@ -4,6 +4,7 @@ Package yaml provides a function to extract values from yaml.MapSlice.
 package yaml
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 var mapSliceType = reflect.TypeOf(yaml.MapSlice{})
 
 // MapSliceExtractFunc is a function for query.CustomExtractFunc option to extract values from yaml.MapSlice.
-func MapSliceExtractFunc(caseInsensitive bool) func(query.ExtractFunc) query.ExtractFunc {
+func MapSliceExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 	return func(f query.ExtractFunc) query.ExtractFunc {
 		return func(in reflect.Value) (reflect.Value, bool) {
 			v := in
@@ -36,7 +37,6 @@ func MapSliceExtractFunc(caseInsensitive bool) func(query.ExtractFunc) query.Ext
 						if ok {
 							return f(reflect.ValueOf(&keyExtractor{
 								v:               s,
-								caseInsensitive: caseInsensitive,
 							}))
 						}
 					}
@@ -49,18 +49,18 @@ func MapSliceExtractFunc(caseInsensitive bool) func(query.ExtractFunc) query.Ext
 
 type keyExtractor struct {
 	v               yaml.MapSlice
-	caseInsensitive bool
 }
 
-// ExtractByKey implements the query.KeyExtractor interface.
-func (e *keyExtractor) ExtractByKey(key string) (interface{}, bool) {
-	if e.caseInsensitive {
+// ExtractByKey implements the query.KeyExtractorContext interface.
+func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (interface{}, bool) {
+	ci := query.IsCaseInsensitive(ctx)
+	if ci {
 		key = strings.ToLower(key)
 	}
 	for _, i := range e.v {
 		k, ok := i.Key.(string)
 		if ok {
-			if e.caseInsensitive {
+			if ci {
 				k = strings.ToLower(k)
 			}
 			if key == k {
