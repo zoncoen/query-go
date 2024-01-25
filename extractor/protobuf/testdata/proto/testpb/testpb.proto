@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package com.github.zoncoen.querygo.extractor.protobuf;
+
+
+option go_package = "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb;testpb";
+
+message OneofMessage {
+    oneof value {
+        A a = 1;
+        B b = 2;
+    }
+    message A {
+      string foo_value = 1;
+    }
+    message B {
+      string bar_value = 1;
+    }
+}
