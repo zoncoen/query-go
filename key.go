@@ -1,6 +1,7 @@
 package query
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -11,6 +12,14 @@ import (
 // It reports whether the key is found and returns the found value.
 type KeyExtractor interface {
 	ExtractByKey(key string) (interface{}, bool)
+}
+
+// KeyExtractorContext is the interface that wraps the ExtractByKey method.
+//
+// ExtractByKey extracts the value by key.
+// It reports whether the key is found and returns the found value.
+type KeyExtractorContext interface {
+	ExtractByKey(ctx context.Context, key string) (any, bool)
 }
 
 // Key represents an extractor to access the value by key.
@@ -28,6 +37,11 @@ type Key struct {
 // If v implements the KeyExtractor interface, this method extracts by calling v.ExtractByKey.
 func (e *Key) Extract(v reflect.Value) (reflect.Value, bool) {
 	if v.IsValid() {
+		if i, ok := v.Interface().(KeyExtractorContext); ok {
+			ctx := withCaseInsensitive(context.Background(), e.caseInsensitive)
+			x, ok := i.ExtractByKey(ctx, e.key)
+			return reflect.ValueOf(x), ok
+		}
 		if i, ok := v.Interface().(KeyExtractor); ok {
 			x, ok := i.ExtractByKey(e.key)
 			return reflect.ValueOf(x), ok

@@ -1,8 +1,10 @@
 package query
 
 import (
+	"context"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -15,6 +17,27 @@ type keyExtractor struct {
 func (f *keyExtractor) ExtractByKey(_ string) (interface{}, bool) {
 	if f.v != nil {
 		return f.v, true
+	}
+	return nil, false
+}
+
+type keyExtractorContext struct {
+	v map[string]any
+}
+
+func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (interface{}, bool) {
+	if f.v != nil {
+		if v, ok := f.v[name]; ok {
+			return v, true
+		}
+		if IsCaseInsensitive(ctx) {
+			name = strings.ToLower(name)
+			for k, v := range f.v {
+				if strings.ToLower(k) == name {
+					return v, true
+				}
+			}
+		}
 	}
 	return nil, false
 }
@@ -160,6 +183,16 @@ func TestKey_Extract(t *testing.T) {
 				v:      &keyExtractor{v: "value"},
 				expect: "value",
 			},
+			"key extractor context": {
+				key:             "key",
+				caseInsensitive: true,
+				v: &keyExtractorContext{
+					v: map[string]any{
+						"KEY": "value",
+					},
+				},
+				expect: "value",
+			},
 		}
 		for name, test := range tests {
 			test := test
@@ -246,6 +279,14 @@ func TestKey_Extract(t *testing.T) {
 					},
 					Inline: map[string]string{
 						"aaa": "yyy",
+					},
+				},
+			},
+			"key extractor context (case sensitive)": {
+				key: "key",
+				v: &keyExtractorContext{
+					v: map[string]any{
+						"KEY": "value",
 					},
 				},
 			},
