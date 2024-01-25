@@ -65,4 +65,4 @@ jobs:
       with:
         name: query-extractor-yaml-coverage-report
         path: ./extractor/yaml/coverage.out
-    - uses: k1LoW/octocov-action@v0
+    - uses: k1LoW/octocov-action@v1
