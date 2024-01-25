@@ -18,7 +18,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 		}{
 			"yaml.MapSlice": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("foo"),
 				v: yaml.MapSlice{
 					yaml.MapItem{
@@ -30,7 +30,8 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			},
 			"yaml.MapSlice (case-insensitive)": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(true)),
+					query.CaseInsensitive(),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("foo"),
 				v: yaml.MapSlice{
 					yaml.MapItem{
@@ -42,7 +43,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			},
 			"[]interface{yaml.MapSlice}": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Index(0).Key("foo"),
 				v: []interface{}{
 					yaml.MapSlice{
@@ -56,7 +57,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			},
 			"*yaml.MapSlice": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("foo"),
 				v: &yaml.MapSlice{
 					yaml.MapItem{
@@ -68,7 +69,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			},
 			"not yaml.MapSlice": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Index(1),
 				v:      []interface{}{1, 2},
 				expect: 2,
@@ -76,7 +77,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			"not slice": {
 				query: query.New(
 					query.CaseInsensitive(),
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("foo"),
 				v: map[string]string{
 					"foo": "aaa",
@@ -105,7 +106,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 		}{
 			"yaml.MapSlice": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("foo"),
 				v: yaml.MapSlice{
 					yaml.MapItem{
@@ -117,7 +118,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 			},
 			"not yaml.MapSlice": {
 				query: query.New(
-					query.CustomExtractFunc(MapSliceExtractFunc(false)),
+					query.CustomExtractFunc(MapSliceExtractFunc()),
 				).Key("bar"),
 				v:      []int{},
 				expect: `".bar" not found`,

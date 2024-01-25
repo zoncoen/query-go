@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/goccy/go-yaml v1.11.2
-	github.com/zoncoen/query-go v1.2.1
+	github.com/zoncoen/query-go v1.3.0
 )
 
 require (
