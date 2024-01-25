@@ -21,7 +21,7 @@ func ExampleExtractFunc() {
 	q := query.New(
 		query.CustomExtractFunc(protobufextractor.ExtractFunc()),
 		query.CustomIsInlineStructFieldFunc(protobufextractor.OneofIsInlineStructFieldFunc()),
-	).Key("B").Key("bar_value")
+	).Key("b").Key("bar_value")
 	got, err := q.Extract(v)
 	if err != nil {
 		log.Fatal(err)
