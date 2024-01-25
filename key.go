@@ -24,11 +24,12 @@ type KeyExtractorContext interface {
 
 // Key represents an extractor to access the value by key.
 type Key struct {
-	key             string
-	caseInsensitive bool
-	structTags      []string
-	fieldNameGetter func(f reflect.StructField) string
-	isInlineFuncs   []func(reflect.StructField) bool
+	key                string
+	caseInsensitive    bool
+	structTags         []string
+	customExtractFuncs []func(ExtractFunc) ExtractFunc
+	fieldNameGetter    func(f reflect.StructField) string
+	isInlineFuncs      []func(reflect.StructField) bool
 }
 
 // Extract extracts the value from v by key.
@@ -116,13 +117,19 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 				inlines = append(inlines, i)
 			}
 		}
-		for _, i := range inlines {
-			val, ok := e.extract(v.FieldByIndex([]int{i}))
-			if ok {
-				if isUnexportedField(val) {
-					unexported = &val
-				} else {
-					return val, true
+		if len(inlines) > 0 {
+			f := e.Extract
+			for i := len(e.customExtractFuncs) - 1; i >= 0; i-- {
+				f = e.customExtractFuncs[i](f)
+			}
+			for _, i := range inlines {
+				val, ok := f(v.FieldByIndex([]int{i}))
+				if ok {
+					if isUnexportedField(val) {
+						unexported = &val
+					} else {
+						return val, true
+					}
 				}
 			}
 		}

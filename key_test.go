@@ -59,12 +59,13 @@ type AnonymousField struct {
 func TestKey_Extract(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		tests := map[string]struct {
-			key             string
-			caseInsensitive bool
-			structTags      []string
-			isInlineFuncs   []func(reflect.StructField) bool
-			v               interface{}
-			expect          interface{}
+			key                string
+			caseInsensitive    bool
+			structTags         []string
+			customExtractFuncs []func(ExtractFunc) ExtractFunc
+			isInlineFuncs      []func(reflect.StructField) bool
+			v                  interface{}
+			expect             interface{}
 		}{
 			"map[string]string": {
 				key: "key",
@@ -148,6 +149,34 @@ func TestKey_Extract(t *testing.T) {
 				},
 				expect: "xxx",
 			},
+			"struct (inline with custom extract funcs)": {
+				key:        "aaa",
+				structTags: []string{"json", "yaml"},
+				customExtractFuncs: []func(ExtractFunc) ExtractFunc{
+					func(f ExtractFunc) ExtractFunc {
+						return func(v reflect.Value) (reflect.Value, bool) {
+							if v.CanInterface() {
+								if vv, ok := v.Interface().(map[string]string); ok {
+									mp := map[string]any{}
+									for k, v := range vv {
+										mp[k] = v + v
+									}
+									if v, ok := f(reflect.ValueOf(&keyExtractorContext{v: mp})); ok {
+										return v, true
+									}
+								}
+							}
+							return f(v)
+						}
+					},
+				},
+				v: testTags{
+					M: map[string]string{
+						"aaa": "xxx",
+					},
+				},
+				expect: "xxxxxx",
+			},
 			"struct (custom inline func)": {
 				key: "aaa",
 				isInlineFuncs: []func(reflect.StructField) bool{
@@ -198,10 +227,11 @@ func TestKey_Extract(t *testing.T) {
 			test := test
 			t.Run(name, func(t *testing.T) {
 				e := &Key{
-					key:             test.key,
-					caseInsensitive: test.caseInsensitive,
-					structTags:      test.structTags,
-					isInlineFuncs:   test.isInlineFuncs,
+					key:                test.key,
+					caseInsensitive:    test.caseInsensitive,
+					structTags:         test.structTags,
+					customExtractFuncs: test.customExtractFuncs,
+					isInlineFuncs:      test.isInlineFuncs,
 				}
 				v, ok := e.Extract(reflect.ValueOf(test.v))
 				if !ok {

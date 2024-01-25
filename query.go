@@ -45,11 +45,12 @@ func (q Query) Root() *Query {
 // Key is shorthand method to create Key and appends it.
 func (q Query) Key(k string) *Query {
 	return q.Append(&Key{
-		key:             k,
-		caseInsensitive: q.caseInsensitive,
-		structTags:      q.structTags,
-		fieldNameGetter: q.customStructFieldNameGetter,
-		isInlineFuncs:   q.customIsInlineFuncs,
+		key:                k,
+		caseInsensitive:    q.caseInsensitive,
+		structTags:         q.structTags,
+		customExtractFuncs: q.customExtractFuncs,
+		fieldNameGetter:    q.customStructFieldNameGetter,
+		isInlineFuncs:      q.customIsInlineFuncs,
 	})
 }
 
