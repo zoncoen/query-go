@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/zoncoen/query-go v1.3.1
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.2
 )
 
 require github.com/pkg/errors v0.9.1 // indirect
