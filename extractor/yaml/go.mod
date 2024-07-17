@@ -3,7 +3,7 @@ module github.com/zoncoen/query-go/extractor/yaml
 go 1.19
 
 require (
-	github.com/goccy/go-yaml v1.11.3
+	github.com/goccy/go-yaml v1.12.0
 	github.com/zoncoen/query-go v1.3.1
 )
 
