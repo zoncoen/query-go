@@ -56,7 +56,7 @@ func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, bool)
 					kv := strings.Split(opt, "=")
 					if len(kv) == 2 {
 						k, v := kv[0], kv[1]
-						if k == "name" {
+						if k == "name" || k == "json" {
 							if ci {
 								v = strings.ToLower(v)
 							}
