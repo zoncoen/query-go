@@ -55,6 +55,33 @@ func TestExtractFunc(t *testing.T) {
 				},
 				expect: "yyy",
 			},
+			"by struct tag json": {
+				query: query.New(
+					query.CustomExtractFunc(ExtractFunc()),
+				).Key("Value").Key("B").Key("barValue"),
+				v: testpb.OneofMessage{
+					Value: &testpb.OneofMessage_B_{
+						B: &testpb.OneofMessage_B{
+							BarValue: "yyy",
+						},
+					},
+				},
+				expect: "yyy",
+			},
+			"by struct tag json (case insensitive)": {
+				query: query.New(
+					query.CaseInsensitive(),
+					query.CustomExtractFunc(ExtractFunc()),
+				).Key("Value").Key("B").Key("BARVALUE"),
+				v: testpb.OneofMessage{
+					Value: &testpb.OneofMessage_B_{
+						B: &testpb.OneofMessage_B{
+							BarValue: "yyy",
+						},
+					},
+				},
+				expect: "yyy",
+			},
 		}
 		for name, test := range tests {
 			test := test
