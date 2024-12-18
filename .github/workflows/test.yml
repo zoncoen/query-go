@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install Go
-      uses: actions/setup-go@v5.0.1
+      uses: actions/setup-go@v5.2.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
@@ -35,7 +35,7 @@ jobs:
         working-directory: ./extractor/yaml
     steps:
     - name: Install Go
-      uses: actions/setup-go@v5.0.1
+      uses: actions/setup-go@v5.2.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
@@ -58,7 +58,7 @@ jobs:
         working-directory: ./extractor/protobuf
     steps:
     - name: Install Go
-      uses: actions/setup-go@v5.0.1
+      uses: actions/setup-go@v5.2.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
