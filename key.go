@@ -37,10 +37,18 @@ type Key struct {
 //
 // If v implements the KeyExtractor interface, this method extracts by calling v.ExtractByKey.
 func (e *Key) Extract(v reflect.Value) (reflect.Value, bool) {
+	return e.ExtractContext(context.Background(), v)
+}
+
+// ExtractContext extracts the value from v by key, passing ctx (extended
+// with the query options) to a context-aware extractor if v implements one.
+//
+// If v implements the KeyExtractorContext interface, this method extracts by
+// calling v.ExtractByKey with ctx; otherwise it falls back to KeyExtractor.
+func (e *Key) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
 	if v.IsValid() {
 		if i, ok := v.Interface().(KeyExtractorContext); ok {
-			ctx := withCaseInsensitive(context.Background(), e.caseInsensitive)
-			x, ok := i.ExtractByKey(ctx, e.key)
+			x, ok := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
 			return reflect.ValueOf(x), ok
 		}
 		if i, ok := v.Interface().(KeyExtractor); ok {
