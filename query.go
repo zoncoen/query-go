@@ -1,6 +1,7 @@
 package query
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -61,12 +62,30 @@ func (q Query) Index(i int) *Query {
 
 // Extract extracts the value by q from target.
 func (q *Query) Extract(target interface{}) (interface{}, error) {
+	return q.ExtractContext(context.Background(), target)
+}
+
+// contextExtractor is implemented by extractors that can use a context.
+type contextExtractor interface {
+	ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool)
+}
+
+// ExtractContext extracts the value by q from target, passing ctx to each
+// extractor that supports it (e.g. a value implementing KeyExtractorContext or
+// IndexExtractorContext). Extractors that are not context-aware behave exactly
+// as in Extract.
+func (q *Query) ExtractContext(ctx context.Context, target interface{}) (interface{}, error) {
 	if q == nil || len(q.extractors) == 0 {
 		return target, nil
 	}
 	v := reflect.ValueOf(target)
 	for _, e := range q.extractors {
 		f := e.Extract
+		if ce, ok := e.(contextExtractor); ok {
+			f = func(v reflect.Value) (reflect.Value, bool) {
+				return ce.ExtractContext(ctx, v)
+			}
+		}
 		for i := len(q.customExtractFuncs) - 1; i >= 0; i-- {
 			f = q.customExtractFuncs[i](f)
 		}
