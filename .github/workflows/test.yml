@@ -16,7 +16,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v4
@@ -39,7 +39,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v4
@@ -62,7 +62,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v4
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - uses: actions/download-artifact@v4
       with:
         name: query-coverage-report
