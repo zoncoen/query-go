@@ -65,17 +65,44 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 	v = elem(v)
 	switch v.Kind() {
 	case reflect.Map:
+		if kt := v.Type().Key(); kt.Kind() == reflect.String {
+			// Fast path: an exact match is a map lookup, not a linear scan.
+			// It also takes precedence over case-insensitive matches.
+			if x := v.MapIndex(reflect.ValueOf(e.key).Convert(kt)); x.IsValid() {
+				return x, true
+			}
+			if !e.caseInsensitive {
+				return reflect.Value{}, false
+			}
+		}
+		// Track the smallest matching key so that a case-insensitive lookup
+		// is deterministic: MapKeys returns keys in a random order.
+		var found reflect.Value
+		var foundKey string
+		lowerKey := strings.ToLower(e.key)
 		for _, k := range v.MapKeys() {
 			k := elem(k)
-			if e.caseInsensitive {
-				if strings.ToLower(k.String()) == strings.ToLower(e.key) {
-					return v.MapIndex(k), true
-				}
-			} else {
-				if k.String() == e.key {
-					return v.MapIndex(k), true
+			if k.Kind() != reflect.String {
+				// A non-string key can never match: String would return a
+				// "<T Value>" placeholder instead of the key itself.
+				continue
+			}
+			ks := k.String()
+			if ks == e.key {
+				return v.MapIndex(k), true
+			}
+			if !e.caseInsensitive {
+				continue
+			}
+			if strings.ToLower(ks) == lowerKey {
+				if !found.IsValid() || ks < foundKey {
+					found = v.MapIndex(k)
+					foundKey = ks
 				}
 			}
+		}
+		if found.IsValid() {
+			return found, true
 		}
 	case reflect.Struct:
 		inlines := []int{}
