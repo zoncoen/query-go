@@ -46,7 +46,9 @@ func (e *Key) Extract(v reflect.Value) (reflect.Value, bool) {
 // If v implements the KeyExtractorContext interface, this method extracts by
 // calling v.ExtractByKey with ctx; otherwise it falls back to KeyExtractor.
 func (e *Key) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
-	if v.IsValid() {
+	// CanInterface is required: values obtained from unexported fields are
+	// read-only and Interface would panic on them.
+	if v.IsValid() && v.CanInterface() {
 		if i, ok := v.Interface().(KeyExtractorContext); ok {
 			x, ok := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
 			return reflect.ValueOf(x), ok

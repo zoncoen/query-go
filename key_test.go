@@ -373,3 +373,19 @@ func TestKey_String(t *testing.T) {
 		})
 	}
 }
+
+func TestKey_Extract_UnexportedEmbeddedStruct(t *testing.T) {
+	type inner struct{ Foo string }
+	v := struct{ inner }{inner{Foo: "value"}}
+	// The inline expansion feeds the read-only value of the unexported
+	// embedded field back into Key.Extract; it must not panic in Interface.
+	// Exported fields promoted through an unexported embedded field are
+	// interfaceable, so the extraction succeeds.
+	got, err := New().Key("Foo").Extract(v)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if expect := "value"; got != expect {
+		t.Fatalf("expected %q but got %q", expect, got)
+	}
+}
