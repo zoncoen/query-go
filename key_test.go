@@ -56,6 +56,8 @@ type AnonymousField struct {
 	S string
 }
 
+type namedKey string
+
 func TestKey_Extract(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		tests := map[string]struct {
@@ -89,6 +91,31 @@ func TestKey_Extract(t *testing.T) {
 					"key": 1,
 				},
 				expect: 1,
+			},
+			"map with a named string key type": {
+				key: "key",
+				v: map[namedKey]string{
+					"key": "value",
+				},
+				expect: "value",
+			},
+			"map[string]string (case-insensitive, exact match wins)": {
+				key:             "key",
+				caseInsensitive: true,
+				v: map[string]string{
+					"key": "exact",
+					"KEY": "upper",
+				},
+				expect: "exact",
+			},
+			"map[string]string (case-insensitive, smallest key wins)": {
+				key:             "key",
+				caseInsensitive: true,
+				v: map[string]string{
+					"KEY": "upper",
+					"Key": "title",
+				},
+				expect: "upper",
 			},
 			"struct": {
 				key:    "Method",
@@ -260,6 +287,18 @@ func TestKey_Extract(t *testing.T) {
 					"Key": "case sensitive",
 				},
 			},
+			"integer-keyed map is not accessible by a string key": {
+				key: "1",
+				v: map[int]string{
+					1: "value",
+				},
+			},
+			"placeholder string must not match a non-string key": {
+				key: "<int Value>",
+				v: map[int]string{
+					1: "value",
+				},
+			},
 			"field not found": {
 				key: "Invalid",
 				v:   http.Request{},
@@ -362,6 +401,18 @@ func TestKey_String(t *testing.T) {
 			key:    "'",
 			expect: "['\\'']",
 		},
+		"]": {
+			key:    "]",
+			expect: "[']']",
+		},
+		"$": {
+			key:    "$foo",
+			expect: "['$foo']",
+		},
+		"empty": {
+			key:    "",
+			expect: "['']",
+		},
 	}
 	for name, test := range tests {
 		test := test
@@ -369,6 +420,39 @@ func TestKey_String(t *testing.T) {
 			k := &Key{key: test.key}
 			if got := k.String(); got != test.expect {
 				t.Errorf("expect %q but got %q", test.expect, got)
+			}
+		})
+	}
+}
+
+func TestKey_Extract_UnexportedEmbeddedStruct(t *testing.T) {
+	type inner struct{ Foo string }
+	v := struct{ inner }{inner{Foo: "value"}}
+	// The inline expansion feeds the read-only value of the unexported
+	// embedded field back into Key.Extract; it must not panic in Interface.
+	// Exported fields promoted through an unexported embedded field are
+	// interfaceable, so the extraction succeeds.
+	got, err := New().Key("Foo").Extract(v)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if expect := "value"; got != expect {
+		t.Fatalf("expected %q but got %q", expect, got)
+	}
+}
+
+func TestKey_String_RoundTrip(t *testing.T) {
+	keys := []string{"aaa", "[", "]", ".", "\\", "'", "$", "$foo", "a$b", "a]b", "", "foo.bar-baz"}
+	for _, key := range keys {
+		key := key
+		t.Run(key, func(t *testing.T) {
+			q := New().Key(key)
+			got, err := ParseString(q.String())
+			if err != nil {
+				t.Fatalf("failed to reparse %q: %s", q.String(), err)
+			}
+			if diff := cmp.Diff(q, got, cmp.AllowUnexported(Query{}, Key{}, Index{})); diff != "" {
+				t.Errorf("%q does not round-trip: (-want +got)\n%s", q.String(), diff)
 			}
 		})
 	}

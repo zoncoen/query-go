@@ -46,7 +46,9 @@ func (e *Key) Extract(v reflect.Value) (reflect.Value, bool) {
 // If v implements the KeyExtractorContext interface, this method extracts by
 // calling v.ExtractByKey with ctx; otherwise it falls back to KeyExtractor.
 func (e *Key) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
-	if v.IsValid() {
+	// CanInterface is required: values obtained from unexported fields are
+	// read-only and Interface would panic on them.
+	if v.IsValid() && v.CanInterface() {
 		if i, ok := v.Interface().(KeyExtractorContext); ok {
 			x, ok := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
 			return reflect.ValueOf(x), ok
@@ -63,17 +65,44 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 	v = elem(v)
 	switch v.Kind() {
 	case reflect.Map:
+		if kt := v.Type().Key(); kt.Kind() == reflect.String {
+			// Fast path: an exact match is a map lookup, not a linear scan.
+			// It also takes precedence over case-insensitive matches.
+			if x := v.MapIndex(reflect.ValueOf(e.key).Convert(kt)); x.IsValid() {
+				return x, true
+			}
+			if !e.caseInsensitive {
+				return reflect.Value{}, false
+			}
+		}
+		// Track the smallest matching key so that a case-insensitive lookup
+		// is deterministic: MapKeys returns keys in a random order.
+		var found reflect.Value
+		var foundKey string
+		lowerKey := strings.ToLower(e.key)
 		for _, k := range v.MapKeys() {
 			k := elem(k)
-			if e.caseInsensitive {
-				if strings.ToLower(k.String()) == strings.ToLower(e.key) {
-					return v.MapIndex(k), true
-				}
-			} else {
-				if k.String() == e.key {
-					return v.MapIndex(k), true
+			if k.Kind() != reflect.String {
+				// A non-string key can never match: String would return a
+				// "<T Value>" placeholder instead of the key itself.
+				continue
+			}
+			ks := k.String()
+			if ks == e.key {
+				return v.MapIndex(k), true
+			}
+			if !e.caseInsensitive {
+				continue
+			}
+			if strings.ToLower(ks) == lowerKey {
+				if !found.IsValid() || ks < foundKey {
+					found = v.MapIndex(k)
+					foundKey = ks
 				}
 			}
+		}
+		if found.IsValid() {
+			return found, true
 		}
 	case reflect.Struct:
 		inlines := []int{}
@@ -163,10 +192,16 @@ func isUnexportedField(v reflect.Value) bool {
 }
 
 // String returns e as string.
+// The result is parseable: keys that would be tokenized differently in the
+// selector notation (e.g. an empty key, or a key containing "$" or "]")
+// are rendered in the quoted form.
 func (e *Key) String() string {
+	if e.key == "" {
+		return quote(e.key)
+	}
 	for _, ch := range e.key {
 		switch ch {
-		case '[', '.', '\\', '\'':
+		case '[', ']', '.', '\\', '\'', '$':
 			return quote(e.key)
 		}
 	}

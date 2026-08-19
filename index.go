@@ -50,7 +50,9 @@ func (e *Index) Extract(v reflect.Value) (reflect.Value, bool) {
 // If v implements the IndexExtractorContext interface, this method extracts by
 // calling v.ExtractByIndex with ctx; otherwise it falls back to IndexExtractor.
 func (e *Index) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
-	if v.IsValid() {
+	// CanInterface is required: values obtained from unexported fields are
+	// read-only and Interface would panic on them.
+	if v.IsValid() && v.CanInterface() {
 		if i, ok := v.Interface().(IndexExtractorContext); ok {
 			x, ok := i.ExtractByIndex(ctx, e.index)
 			return reflect.ValueOf(x), ok
