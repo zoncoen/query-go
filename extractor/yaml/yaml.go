@@ -36,7 +36,7 @@ func MapSliceExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 						s, ok := v.Interface().(yaml.MapSlice)
 						if ok {
 							return f(reflect.ValueOf(&keyExtractor{
-								v:               s,
+								v: s,
 							}))
 						}
 					}
@@ -48,7 +48,7 @@ func MapSliceExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 }
 
 type keyExtractor struct {
-	v               yaml.MapSlice
+	v yaml.MapSlice
 }
 
 // ExtractByKey implements the query.KeyExtractorContext interface.

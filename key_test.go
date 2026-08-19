@@ -48,8 +48,8 @@ type testTags struct {
 	M      map[string]string `json:",inline"`
 	Inline map[string]string
 
-	state struct{}
-	State string `json:"state"`
+	state struct{} //nolint:unused // never read; its unexported field name is what the fallthrough test matches against
+	State string   `json:"state"`
 }
 
 type AnonymousField struct {

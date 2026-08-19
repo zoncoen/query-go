@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleExtractFunc() {
-	v := testpb.OneofMessage{
+	v := &testpb.OneofMessage{
 		Value: &testpb.OneofMessage_B_{
 			B: &testpb.OneofMessage_B{
 				BarValue: "yyy",
