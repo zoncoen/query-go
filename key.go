@@ -165,10 +165,16 @@ func isUnexportedField(v reflect.Value) bool {
 }
 
 // String returns e as string.
+// The result is parseable: keys that would be tokenized differently in the
+// selector notation (e.g. an empty key, or a key containing "$" or "]")
+// are rendered in the quoted form.
 func (e *Key) String() string {
+	if e.key == "" {
+		return quote(e.key)
+	}
 	for _, ch := range e.key {
 		switch ch {
-		case '[', '.', '\\', '\'':
+		case '[', ']', '.', '\\', '\'', '$':
 			return quote(e.key)
 		}
 	}

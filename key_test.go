@@ -362,6 +362,18 @@ func TestKey_String(t *testing.T) {
 			key:    "'",
 			expect: "['\\'']",
 		},
+		"]": {
+			key:    "]",
+			expect: "[']']",
+		},
+		"$": {
+			key:    "$foo",
+			expect: "['$foo']",
+		},
+		"empty": {
+			key:    "",
+			expect: "['']",
+		},
 	}
 	for name, test := range tests {
 		test := test
@@ -387,5 +399,22 @@ func TestKey_Extract_UnexportedEmbeddedStruct(t *testing.T) {
 	}
 	if expect := "value"; got != expect {
 		t.Fatalf("expected %q but got %q", expect, got)
+	}
+}
+
+func TestKey_String_RoundTrip(t *testing.T) {
+	keys := []string{"aaa", "[", "]", ".", "\\", "'", "$", "$foo", "a$b", "a]b", "", "foo.bar-baz"}
+	for _, key := range keys {
+		key := key
+		t.Run(key, func(t *testing.T) {
+			q := New().Key(key)
+			got, err := ParseString(q.String())
+			if err != nil {
+				t.Fatalf("failed to reparse %q: %s", q.String(), err)
+			}
+			if diff := cmp.Diff(q, got, cmp.AllowUnexported(Query{}, Key{}, Index{})); diff != "" {
+				t.Errorf("%q does not round-trip: (-want +got)\n%s", q.String(), diff)
+			}
+		})
 	}
 }
