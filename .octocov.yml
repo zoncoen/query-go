@@ -4,6 +4,7 @@ coverage:
   paths:
   - ./coverage.out
   - ./extractor/yaml/coverage.out
+  - ./extractor/protobuf/coverage.out
   badge:
     path: docs/coverage.svg
 codeToTestRatio:

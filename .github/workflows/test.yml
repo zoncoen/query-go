@@ -84,13 +84,13 @@ jobs:
     - uses: actions/download-artifact@v8
       with:
         name: query-coverage-report
-        path: ./coverage.out
+        path: .
     - uses: actions/download-artifact@v8
       with:
         name: query-extractor-yaml-coverage-report
-        path: ./extractor/yaml/coverage.out
+        path: ./extractor/yaml
     - uses: actions/download-artifact@v8
       with:
         name: query-extractor-protobuf-coverage-report
-        path: ./extractor/protobuf/coverage.out
+        path: ./extractor/protobuf
     - uses: k1LoW/octocov-action@v1
