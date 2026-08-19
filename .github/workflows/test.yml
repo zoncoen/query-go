@@ -94,3 +94,29 @@ jobs:
         name: query-extractor-protobuf-coverage-report
         path: ./extractor/protobuf
     - uses: k1LoW/octocov-action@v1
+
+  lint:
+    strategy:
+      matrix:
+        dir: [".", "extractor/yaml", "extractor/protobuf"]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+    - name: Install Go
+      uses: actions/setup-go@v7.0.0
+      with:
+        go-version: stable
+    - name: gofmt
+      working-directory: ${{ matrix.dir }}
+      run: |
+        unformatted=$(gofmt -l .)
+        if [ -n "$unformatted" ]; then
+          echo "the following files are not gofmt-ed:"
+          echo "$unformatted"
+          exit 1
+        fi
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        working-directory: ${{ matrix.dir }}
