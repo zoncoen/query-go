@@ -58,6 +58,16 @@ func TestParser_Parse(t *testing.T) {
 					Index: 0,
 				},
 			},
+			"negative index": {
+				src: "$[-1]",
+				expected: &ast.Index{
+					ValuePos: 2,
+					X: &ast.Root{
+						ValuePos: 1,
+					},
+					Index: -1,
+				},
+			},
 			"an index": {
 				src: "[0]",
 				expected: &ast.Index{

@@ -56,6 +56,8 @@ func (q Query) Key(k string) *Query {
 }
 
 // Index is shorthand method to create Index and appends it.
+// A negative i accesses the sequence from the end: -1 is the last element.
+// See Index for the exact semantics.
 func (q Query) Index(i int) *Query {
 	return q.Append(&Index{index: i})
 }

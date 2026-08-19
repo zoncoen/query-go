@@ -62,7 +62,7 @@ func (s *scanner) scan() (int, token.Token, string) {
 			s.isReadingIndex = false
 			return s.pos - 1, token.RBRACK, "]"
 		}
-		if isDigit(ch) {
+		if ch == '-' || isDigit(ch) {
 			return s.scanInt(ch)
 		}
 		return s.pos - 1, token.ILLEGAL, string(ch)
@@ -140,10 +140,16 @@ scan:
 		}
 		b.WriteRune(ch)
 	}
+	lit := b.String()
 	if head == '0' && b.Len() != 1 {
-		return s.pos - b.Len(), token.ILLEGAL, b.String()
+		return s.pos - b.Len(), token.ILLEGAL, lit
 	}
-	return s.pos - b.Len(), token.INT, b.String()
+	// A bare "-" and negative zero ("-0", "-00", ...) are not valid indices;
+	// RFC 9535 (JSONPath) disallows -0 as well.
+	if head == '-' && (b.Len() == 1 || lit[1] == '0') {
+		return s.pos - b.Len(), token.ILLEGAL, lit
+	}
+	return s.pos - b.Len(), token.INT, lit
 }
 
 func isDigit(ch rune) bool {
