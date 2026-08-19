@@ -40,6 +40,9 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
+    - name: Use the local root module
+      working-directory: ${{ github.workspace }}
+      run: go work init . ./extractor/yaml ./extractor/protobuf
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
@@ -63,6 +66,9 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
+    - name: Use the local root module
+      working-directory: ${{ github.workspace }}
+      run: go work init . ./extractor/yaml ./extractor/protobuf
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
