@@ -125,6 +125,26 @@ func TestScanner_Scan(t *testing.T) {
 					},
 				},
 			},
+			"[negative INT]": {
+				src: `[-1]`,
+				expected: []result{
+					{
+						pos: 1,
+						tok: token.LBRACK,
+						lit: "[",
+					},
+					{
+						pos: 2,
+						tok: token.INT,
+						lit: "-1",
+					},
+					{
+						pos: 4,
+						tok: token.RBRACK,
+						lit: "]",
+					},
+				},
+			},
 			"['STRING']": {
 				src: `['test']`,
 				expected: []result{
@@ -255,6 +275,21 @@ func TestScanner_Scan(t *testing.T) {
 				src: "[01]",
 				pos: 2,
 				lit: "01",
+			},
+			"minus sign without digits": {
+				src: "[-]",
+				pos: 2,
+				lit: "-",
+			},
+			"negative zero index": {
+				src: "[-0]",
+				pos: 2,
+				lit: "-0",
+			},
+			"negative index with leading zero": {
+				src: "[-01]",
+				pos: 2,
+				lit: "-01",
 			},
 			"invalid selector": {
 				src: `[test]`,

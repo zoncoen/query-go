@@ -46,8 +46,27 @@ func TestIndex_Extract(t *testing.T) {
 				},
 				expect: 2,
 			},
+			"negative index accesses the slice from the end": {
+				index: -1,
+				v: []int{
+					0, 1, 2,
+				},
+				expect: 2,
+			},
+			"negative index accesses the array from the end": {
+				index: -3,
+				v: [3]int{
+					0, 1, 2,
+				},
+				expect: 0,
+			},
 			"index extractor": {
 				index:  10,
+				v:      &indexExtractor{v: "value"},
+				expect: "value",
+			},
+			"index extractor receives a negative index as given": {
+				index:  -1,
 				v:      &indexExtractor{v: "value"},
 				expect: "value",
 			},
@@ -82,6 +101,14 @@ func TestIndex_Extract(t *testing.T) {
 			"array has not index": {
 				index: 1,
 				v:     [1]int{0},
+			},
+			"negative index out of range": {
+				index: -4,
+				v:     []int{0, 1, 2},
+			},
+			"negative index into empty slice": {
+				index: -1,
+				v:     []int{},
 			},
 			"index extractor returns false": {
 				index: 10,

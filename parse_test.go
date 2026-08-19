@@ -20,6 +20,10 @@ func TestParseString(t *testing.T) {
 				src:      "a[0][1].b",
 				expected: New().Key("a").Index(0).Index(1).Key("b"),
 			},
+			"key[negative index]": {
+				src:      "a[-1]",
+				expected: New().Key("a").Index(-1),
+			},
 			"$.key[index][key].key": {
 				src:      "$.a[0]['\\'1.0\\''].b",
 				expected: New().Root().Key("a").Index(0).Key("'1.0'").Key("b"),

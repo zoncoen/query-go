@@ -23,6 +23,15 @@ type IndexExtractorContext interface {
 }
 
 // Index represents an extractor to access the value by index.
+//
+// A negative index accesses the sequence from the end: -1 is the last
+// element, -2 is the second to last, and so on, following the convention
+// of RFC 9535 (JSONPath). An index that remains out of range after this
+// normalization is reported as not found.
+//
+// Note that a value implementing IndexExtractor or IndexExtractorContext
+// receives the index as given (possibly negative); handling negative
+// indices is up to the implementation.
 type Index struct {
 	index int
 }
@@ -57,14 +66,14 @@ func (e *Index) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Va
 func (e *Index) extract(v reflect.Value) (reflect.Value, bool) {
 	v = elem(v)
 	switch v.Kind() {
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		i := e.index
-		if v.Len() > i {
-			return v.Index(i), true
+		if i < 0 {
+			// A negative index counts backwards from the end of the sequence,
+			// following the convention of RFC 9535 (JSONPath).
+			i += v.Len()
 		}
-	case reflect.Array:
-		i := e.index
-		if v.Len() > i {
+		if 0 <= i && i < v.Len() {
 			return v.Index(i), true
 		}
 	}
