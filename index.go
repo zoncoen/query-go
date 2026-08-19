@@ -24,10 +24,17 @@ type IndexExtractorContext interface {
 
 // Index represents an extractor to access the value by index.
 //
-// A negative index accesses the sequence from the end: -1 is the last
-// element, -2 is the second to last, and so on, following the convention
-// of RFC 9535 (JSONPath). An index that remains out of range after this
-// normalization is reported as not found.
+// For slices and arrays, a negative index accesses the sequence from the
+// end: -1 is the last element, -2 is the second to last, and so on,
+// following the convention of RFC 9535 (JSONPath). An index that remains
+// out of range after this normalization is reported as not found.
+//
+// For maps with an integer-kinded key type (and interface-keyed maps
+// holding int keys), the index is looked up as the literal map key with no
+// normalization: maps have no order, so -1 means the key -1. Maps with a
+// floating-point key type are deliberately not supported, matching the map
+// key policies of protobuf and CEL: key lookup by equality is unreliable
+// for floating-point values.
 //
 // Note that a value implementing IndexExtractor or IndexExtractorContext
 // receives the index as given (possibly negative); handling negative
@@ -75,6 +82,43 @@ func (e *Index) extract(v reflect.Value) (reflect.Value, bool) {
 		}
 		if 0 <= i && i < v.Len() {
 			return v.Index(i), true
+		}
+	case reflect.Map:
+		// An index into a map is the literal map key: maps have no order,
+		// so negative indices are not normalized.
+		key, ok := e.mapKey(v.Type().Key())
+		if !ok {
+			break
+		}
+		if x := v.MapIndex(key); x.IsValid() {
+			return x, true
+		}
+	}
+	return reflect.Value{}, false
+}
+
+// mapKey converts the index to a map key of type kt. It reports false when
+// kt cannot hold the index: a non-integer key type, or an integer type whose
+// range the index does not fit in (a silent Convert would truncate and match
+// the wrong key).
+func (e *Index) mapKey(kt reflect.Type) (reflect.Value, bool) {
+	switch kt.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if reflect.New(kt).Elem().OverflowInt(int64(e.index)) {
+			return reflect.Value{}, false
+		}
+		return reflect.ValueOf(e.index).Convert(kt), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		if e.index < 0 || reflect.New(kt).Elem().OverflowUint(uint64(e.index)) {
+			return reflect.Value{}, false
+		}
+		return reflect.ValueOf(e.index).Convert(kt), true
+	case reflect.Interface:
+		if kt.NumMethod() == 0 {
+			// Interface-keyed maps are looked up with an int key; keys
+			// stored as other integer types are not matched, since
+			// interface equality includes the dynamic type.
+			return reflect.ValueOf(e.index), true
 		}
 	}
 	return reflect.Value{}, false
