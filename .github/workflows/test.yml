@@ -40,6 +40,9 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
+    - name: Use the local root module
+      working-directory: ${{ github.workspace }}
+      run: go work init . ./extractor/yaml ./extractor/protobuf
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
@@ -63,6 +66,9 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
+    - name: Use the local root module
+      working-directory: ${{ github.workspace }}
+      run: go work init . ./extractor/yaml ./extractor/protobuf
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
@@ -84,13 +90,39 @@ jobs:
     - uses: actions/download-artifact@v8
       with:
         name: query-coverage-report
-        path: ./coverage.out
+        path: .
     - uses: actions/download-artifact@v8
       with:
         name: query-extractor-yaml-coverage-report
-        path: ./extractor/yaml/coverage.out
+        path: ./extractor/yaml
     - uses: actions/download-artifact@v8
       with:
         name: query-extractor-protobuf-coverage-report
-        path: ./extractor/protobuf/coverage.out
+        path: ./extractor/protobuf
     - uses: k1LoW/octocov-action@v1
+
+  lint:
+    strategy:
+      matrix:
+        dir: [".", "extractor/yaml", "extractor/protobuf"]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+    - name: Install Go
+      uses: actions/setup-go@v7.0.0
+      with:
+        go-version: stable
+    - name: gofmt
+      working-directory: ${{ matrix.dir }}
+      run: |
+        unformatted=$(gofmt -l .)
+        if [ -n "$unformatted" ]; then
+          echo "the following files are not gofmt-ed:"
+          echo "$unformatted"
+          exit 1
+        fi
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        working-directory: ${{ matrix.dir }}

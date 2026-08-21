@@ -159,7 +159,7 @@ func TestQuery_Extract(t *testing.T) {
 
 	t.Run("failure", func(t *testing.T) {
 		type test struct {
-			unexported struct{}
+			unexported struct{} //nolint:unused // never read; the failure cases exercise access to an unexported field
 		}
 
 		tests := map[string]struct {
