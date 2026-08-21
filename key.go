@@ -35,7 +35,14 @@ func (e *Key) Extract(ctx context.Context, v reflect.Value) (reflect.Value, erro
 	// read-only and Interface would panic on them.
 	if v.IsValid() && v.CanInterface() {
 		if i, ok := v.Interface().(KeyExtractor); ok {
-			x, err := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
+			// Write the flag only when it changes what IsCaseInsensitive
+			// reports, avoiding a context allocation on the common path.
+			// Writing unconditionally when false would be wasteful; never
+			// writing false would leak an outer true into nested sub-queries.
+			if IsCaseInsensitive(ctx) != e.caseInsensitive {
+				ctx = withCaseInsensitive(ctx, e.caseInsensitive)
+			}
+			x, err := i.ExtractByKey(ctx, e.key)
 			if err != nil {
 				return reflect.Value{}, err
 			}
