@@ -11,10 +11,10 @@ type orderedMap struct {
 }
 
 type elem struct {
-	k, v interface{}
+	k, v any
 }
 
-func (m *orderedMap) ExtractByKey(key string) (interface{}, bool) {
+func (m *orderedMap) ExtractByKey(key string) (any, bool) {
 	for _, e := range m.elems {
 		if k, ok := e.k.(string); ok {
 			if k == key {

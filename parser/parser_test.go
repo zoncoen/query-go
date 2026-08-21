@@ -122,7 +122,6 @@ func TestParser_Parse(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				p := NewParser(strings.NewReader(test.src))
 				got, err := p.Parse()
@@ -154,7 +153,6 @@ func TestParser_Parse(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				p := NewParser(strings.NewReader(test.src))
 				_, err := p.Parse()

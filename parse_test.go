@@ -31,7 +31,6 @@ func TestParseString(t *testing.T) {
 		}
 		opt := cmp.AllowUnexported(Query{}, Key{}, Index{})
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				got, err := ParseString(test.src)
 				if err != nil {

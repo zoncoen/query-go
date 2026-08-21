@@ -2,10 +2,9 @@ package query
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Query represents a query to extract the element from a value.
@@ -64,7 +63,7 @@ func (q Query) Index(i int) *Query {
 }
 
 // Extract extracts the value by q from target.
-func (q *Query) Extract(target interface{}) (interface{}, error) {
+func (q *Query) Extract(target any) (any, error) {
 	return q.ExtractContext(context.Background(), target)
 }
 
@@ -77,7 +76,7 @@ type contextExtractor interface {
 // extractor that supports it (e.g. a value implementing KeyExtractorContext or
 // IndexExtractorContext). Extractors that are not context-aware behave exactly
 // as in Extract.
-func (q *Query) ExtractContext(ctx context.Context, target interface{}) (interface{}, error) {
+func (q *Query) ExtractContext(ctx context.Context, target any) (any, error) {
 	if q == nil || len(q.extractors) == 0 {
 		return target, nil
 	}
@@ -95,10 +94,10 @@ func (q *Query) ExtractContext(ctx context.Context, target interface{}) (interfa
 		var ok bool
 		v, ok = f(v)
 		if !ok {
-			return nil, errors.Errorf(`"%s" not found`, q.String())
+			return nil, fmt.Errorf(`"%s" not found`, q.String())
 		}
 		if v.IsValid() && !v.CanInterface() {
-			return nil, errors.Errorf("%s: can not access unexported field or method", q.String())
+			return nil, fmt.Errorf("%s: can not access unexported field or method", q.String())
 		}
 	}
 	if !v.IsValid() {

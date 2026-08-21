@@ -1,10 +1,10 @@
 package query
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/zoncoen/query-go/ast"
 	"github.com/zoncoen/query-go/parser"
 )
@@ -42,7 +42,7 @@ func buildQuery(q *Query, node ast.Node) (*Query, error) {
 			q = q.Index(n.Index)
 		}
 	default:
-		return nil, errors.Errorf("unknown node type: %T", node)
+		return nil, fmt.Errorf("unknown node type: %T", node)
 	}
 	return q, err
 }
