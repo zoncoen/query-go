@@ -319,3 +319,29 @@ func TestQuery_Extract_Concurrent(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// nestedExtractor resolves its key against a nested map with a sub-query
+// configured from the caller's options.
+type nestedExtractor struct {
+	v any
+}
+
+func (e *nestedExtractor) ExtractByKey(ctx context.Context, key string) (any, error) {
+	return New(OptionsFromContext(ctx)...).Key(key).Extract(ctx, e.v)
+}
+
+func TestOptionsFromContext(t *testing.T) {
+	target := map[string]any{
+		"nested": &nestedExtractor{v: &testTags{FooBar: "aaa"}},
+	}
+	got, err := New(ExtractByStructTag("json")).Key("nested").Key("foo_bar").Extract(context.Background(), target)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if got != "aaa" {
+		t.Fatalf("expected the caller's struct-tag option to reach the sub-query, got %v", got)
+	}
+	if opts := OptionsFromContext(context.Background()); opts != nil {
+		t.Fatalf("expected nil outside an extraction, got %v", opts)
+	}
+}

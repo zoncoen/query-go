@@ -75,6 +75,9 @@ func (q *Query) Extract(ctx context.Context, target any) (any, error) {
 	if q == nil || len(q.extractors) == 0 {
 		return target, nil
 	}
+	// Expose the query's configuration to extractor implementations; see
+	// OptionsFromContext.
+	ctx = withOptions(ctx, q.options())
 	v := reflect.ValueOf(target)
 	for i, e := range q.extractors {
 		f := e.Extract
@@ -114,6 +117,27 @@ func (q *Query) prefixString(n int) string {
 		b.WriteString(f.String())
 	}
 	return b.String()
+}
+
+// options reconstructs the Option list equivalent to q's configuration.
+func (q *Query) options() []Option {
+	var opts []Option
+	if q.caseInsensitive {
+		opts = append(opts, CaseInsensitive())
+	}
+	if len(q.structTags) > 0 {
+		opts = append(opts, ExtractByStructTag(q.structTags...))
+	}
+	for _, f := range q.customExtractFuncs {
+		opts = append(opts, CustomExtractFunc(f))
+	}
+	if q.customStructFieldNameGetter != nil {
+		opts = append(opts, CustomStructFieldNameGetter(q.customStructFieldNameGetter))
+	}
+	for _, f := range q.customIsInlineFuncs {
+		opts = append(opts, CustomIsInlineStructFieldFunc(f))
+	}
+	return opts
 }
 
 // Extractors returns query extractors of q.
