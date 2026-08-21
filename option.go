@@ -1,6 +1,9 @@
 package query
 
-import "reflect"
+import (
+	"reflect"
+	"slices"
+)
 
 // Option represents an option for Query.
 type Option func(*Query)
@@ -13,7 +16,10 @@ func CaseInsensitive() Option {
 }
 
 // ExtractByStructTag returns the Option to allow extracting by struct tag.
+// The tag names are copied, so later mutation of a slice passed with ... has
+// no effect on the option.
 func ExtractByStructTag(tagNames ...string) Option {
+	tagNames = slices.Clone(tagNames)
 	return func(q *Query) {
 		q.structTags = append(q.structTags, tagNames...)
 	}

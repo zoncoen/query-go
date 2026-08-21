@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 )
 
 // Query represents a query to extract the element from a value.
 type Query struct {
+	opts                        []Option
 	extractors                  []Extractor
 	caseInsensitive             bool
 	structTags                  []string
@@ -21,7 +23,10 @@ type Query struct {
 
 // New returns a new query.
 func New(opts ...Option) *Query {
-	q := &Query{}
+	// Keep the original options so that OptionsFromContext reproduces the
+	// query's configuration without a hand-maintained reconstruction; clone
+	// so that the caller cannot mutate them afterwards.
+	q := &Query{opts: slices.Clone(opts)}
 	for _, opt := range opts {
 		opt(q)
 	}
@@ -77,7 +82,7 @@ func (q *Query) Extract(ctx context.Context, target any) (any, error) {
 	}
 	// Expose the query's configuration to extractor implementations; see
 	// OptionsFromContext.
-	ctx = withOptions(ctx, q.options())
+	ctx = withOptions(ctx, q.opts)
 	v := reflect.ValueOf(target)
 	for i, e := range q.extractors {
 		f := e.Extract
@@ -119,30 +124,13 @@ func (q *Query) prefixString(n int) string {
 	return b.String()
 }
 
-// options reconstructs the Option list equivalent to q's configuration.
-func (q *Query) options() []Option {
-	var opts []Option
-	if q.caseInsensitive {
-		opts = append(opts, CaseInsensitive())
-	}
-	if len(q.structTags) > 0 {
-		opts = append(opts, ExtractByStructTag(q.structTags...))
-	}
-	for _, f := range q.customExtractFuncs {
-		opts = append(opts, CustomExtractFunc(f))
-	}
-	if q.customStructFieldNameGetter != nil {
-		opts = append(opts, CustomStructFieldNameGetter(q.customStructFieldNameGetter))
-	}
-	for _, f := range q.customIsInlineFuncs {
-		opts = append(opts, CustomIsInlineStructFieldFunc(f))
-	}
-	return opts
-}
-
-// Extractors returns query extractors of q.
+// Extractors returns a copy of the query extractors of q, so that mutating
+// the returned slice cannot corrupt q. Note that extractors carry a snapshot
+// of the options they were created with, but a query rebuilt from them via
+// Append does not: OptionsFromContext inside such a query reflects the new
+// query's own options only.
 func (q *Query) Extractors() []Extractor {
-	return q.extractors
+	return slices.Clone(q.extractors)
 }
 
 // An Extractor interface is used by a query to extract the element from a
