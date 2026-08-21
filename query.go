@@ -88,7 +88,7 @@ func (q *Query) Extract(ctx context.Context, target any) (any, error) {
 		v, err = f(ctx, v)
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
-				return nil, &NotFoundError{Query: q.String(), FailedAt: q.prefixString(i + 1)}
+				return nil, &NotFoundError{Query: q.String(), FailedAt: q.prefixString(i + 1), Err: err}
 			}
 			return nil, fmt.Errorf("%s: %w", q.prefixString(i+1), err)
 		}

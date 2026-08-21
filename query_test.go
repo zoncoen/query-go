@@ -345,3 +345,33 @@ func TestOptionsFromContext(t *testing.T) {
 		t.Fatalf("expected nil outside an extraction, got %v", opts)
 	}
 }
+
+// explainedAbsence wraps ErrNotFound with a diagnostic, the way a blocking
+// extractor would explain why the element is absent.
+type explainedAbsence struct{}
+
+func (e *explainedAbsence) ExtractByIndex(_ context.Context, _ int) (any, error) {
+	return nil, fmt.Errorf("stream ended after 3 messages: %w", ErrNotFound)
+}
+
+func TestQuery_Extract_NotFoundPreservesCause(t *testing.T) {
+	_, err := New().Key("messages").Index(3).Extract(context.Background(), map[string]any{
+		"messages": &explainedAbsence{},
+	})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if got, expect := err.Error(), `".messages[3]" not found`; got != expect {
+		t.Errorf("the message must stay stable: expected %q but got %q", expect, got)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Error("expected errors.Is(err, ErrNotFound) to be true")
+	}
+	var nfe *NotFoundError
+	if !errors.As(err, &nfe) {
+		t.Fatal("expected *NotFoundError")
+	}
+	if nfe.Err == nil || !strings.Contains(nfe.Err.Error(), "stream ended after 3 messages") {
+		t.Errorf("expected the extractor's diagnostic to be preserved, got %v", nfe.Err)
+	}
+}
