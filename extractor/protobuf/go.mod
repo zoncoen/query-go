@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/zoncoen/query-go v1.4.0
+	github.com/zoncoen/query-go v1.5.0
 	google.golang.org/protobuf v1.36.12
 )
 
