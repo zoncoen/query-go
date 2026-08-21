@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -62,39 +63,31 @@ func (q Query) Index(i int) *Query {
 	return q.Append(&Index{index: i})
 }
 
-// Extract extracts the value by q from target.
-func (q *Query) Extract(target any) (any, error) {
-	return q.ExtractContext(context.Background(), target)
-}
-
-// contextExtractor is implemented by extractors that can use a context.
-type contextExtractor interface {
-	ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool)
-}
-
-// ExtractContext extracts the value by q from target, passing ctx to each
-// extractor that supports it (e.g. a value implementing KeyExtractorContext or
-// IndexExtractorContext). Extractors that are not context-aware behave exactly
-// as in Extract.
-func (q *Query) ExtractContext(ctx context.Context, target any) (any, error) {
+// Extract extracts the value by q from target, passing ctx to each
+// extractor (e.g. a value implementing KeyExtractor or IndexExtractor).
+//
+// When the queried element is absent, the returned error is a *NotFoundError
+// matching ErrNotFound via errors.Is. Any other error reported by an
+// extractor — e.g. a context cancellation that interrupted a blocking
+// extractor — aborts the extraction and is returned wrapped with the
+// position of the failing extractor.
+func (q *Query) Extract(ctx context.Context, target any) (any, error) {
 	if q == nil || len(q.extractors) == 0 {
 		return target, nil
 	}
 	v := reflect.ValueOf(target)
-	for _, e := range q.extractors {
+	for i, e := range q.extractors {
 		f := e.Extract
-		if ce, ok := e.(contextExtractor); ok {
-			f = func(v reflect.Value) (reflect.Value, bool) {
-				return ce.ExtractContext(ctx, v)
+		for j := len(q.customExtractFuncs) - 1; j >= 0; j-- {
+			f = q.customExtractFuncs[j](f)
+		}
+		var err error
+		v, err = f(ctx, v)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return nil, &NotFoundError{Query: q.String(), FailedAt: q.prefixString(i + 1)}
 			}
-		}
-		for i := len(q.customExtractFuncs) - 1; i >= 0; i-- {
-			f = q.customExtractFuncs[i](f)
-		}
-		var ok bool
-		v, ok = f(v)
-		if !ok {
-			return nil, fmt.Errorf(`"%s" not found`, q.String())
+			return nil, fmt.Errorf("%s: %w", q.prefixString(i+1), err)
 		}
 		if v.IsValid() && !v.CanInterface() {
 			return nil, fmt.Errorf("%s: can not access unexported field or method", q.String())
@@ -108,11 +101,16 @@ func (q *Query) ExtractContext(ctx context.Context, target any) (any, error) {
 
 // String returns q as string.
 func (q *Query) String() string {
+	return q.prefixString(len(q.extractors))
+}
+
+// prefixString returns the string representation of the first n extractors.
+func (q *Query) prefixString(n int) string {
 	var b strings.Builder
 	if q.hasExplicitRoot {
 		b.WriteString("$")
 	}
-	for _, f := range q.extractors {
+	for _, f := range q.extractors[:n] {
 		b.WriteString(f.String())
 	}
 	return b.String()
@@ -123,11 +121,15 @@ func (q *Query) Extractors() []Extractor {
 	return q.extractors
 }
 
-// An Extractor interface is used by a query to extract the element from a value.
+// An Extractor interface is used by a query to extract the element from a
+// value. Extract returns the extracted value, or ErrNotFound (optionally
+// wrapped) when the element is absent; any other error is treated as an
+// extraction failure and aborts the query.
 type Extractor interface {
-	Extract(v reflect.Value) (reflect.Value, bool)
+	Extract(ctx context.Context, v reflect.Value) (reflect.Value, error)
 	String() string
 }
 
-// ExtractFunc represents a function to extracts a value.
-type ExtractFunc func(v reflect.Value) (reflect.Value, bool)
+// ExtractFunc is the type of the extraction function customized by the
+// CustomExtractFunc option.
+type ExtractFunc func(ctx context.Context, v reflect.Value) (reflect.Value, error)

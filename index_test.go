@@ -1,6 +1,8 @@
 package query
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -13,11 +15,11 @@ type indexExtractor struct {
 
 type namedIntKey int
 
-func (f *indexExtractor) ExtractByIndex(_ int) (any, bool) {
+func (f *indexExtractor) ExtractByIndex(_ context.Context, _ int) (any, error) {
 	if f.v != nil {
-		return f.v, true
+		return f.v, nil
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 func TestIndex_Extract(t *testing.T) {
@@ -112,9 +114,9 @@ func TestIndex_Extract(t *testing.T) {
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
 				e := &Index{index: test.index}
-				v, ok := e.Extract(reflect.ValueOf(test.v))
-				if !ok {
-					t.Fatal("not found")
+				v, err := e.Extract(context.Background(), reflect.ValueOf(test.v))
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err)
 				}
 				if diff := cmp.Diff(test.expect, v.Interface()); diff != "" {
 					t.Errorf("differs: (-want +got)\n%s", diff)
@@ -179,9 +181,12 @@ func TestIndex_Extract(t *testing.T) {
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
 				e := &Index{index: test.index}
-				v, ok := e.Extract(reflect.ValueOf(test.v))
-				if ok {
+				v, err := e.Extract(context.Background(), reflect.ValueOf(test.v))
+				if err == nil {
 					t.Fatalf("unexpected value: %#v", v)
+				}
+				if !errors.Is(err, ErrNotFound) {
+					t.Fatalf("expected ErrNotFound but got: %s", err)
 				}
 			})
 		}

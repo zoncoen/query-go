@@ -1,6 +1,7 @@
 package query_test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -18,7 +19,7 @@ func ExampleCaseInsensitive() {
 		Name: "Alice",
 	}
 	q := query.New(query.CaseInsensitive()).Key("NAME")
-	name, _ := q.Extract(person)
+	name, _ := q.Extract(context.Background(), person)
 	fmt.Println(name)
 	// Output:
 	// Alice
@@ -29,7 +30,7 @@ func ExampleExtractByStructTag() {
 		Name: "Alice",
 	}
 	q := query.New(query.ExtractByStructTag("json")).Key("name")
-	name, _ := q.Extract(person)
+	name, _ := q.Extract(context.Background(), person)
 	fmt.Println(name)
 	// Output:
 	// Alice
@@ -41,12 +42,12 @@ func ExampleCustomExtractFunc() {
 	}
 	q := query.New(
 		query.CustomExtractFunc(func(f query.ExtractFunc) query.ExtractFunc {
-			return func(v reflect.Value) (reflect.Value, bool) {
-				return reflect.ValueOf("Bob"), true
+			return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+				return reflect.ValueOf("Bob"), nil
 			}
 		}),
 	).Key("name")
-	name, _ := q.Extract(person)
+	name, _ := q.Extract(context.Background(), person)
 	fmt.Println(name)
 	// Output:
 	// Bob
@@ -70,7 +71,7 @@ func ExampleCustomStructFieldNameGetter() {
 	q := query.New(
 		query.CustomStructFieldNameGetter(getFieldNameByJSONTag),
 	).Key("name")
-	name, _ := q.Extract(person)
+	name, _ := q.Extract(context.Background(), person)
 	fmt.Println(name)
 	// Output:
 	// Alice

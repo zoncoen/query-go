@@ -8,18 +8,11 @@ import (
 
 // IndexExtractor is the interface that wraps the ExtractByIndex method.
 //
-// ExtractByIndex extracts the value by index.
-// It reports whether the index is found and returns the found value.
+// ExtractByIndex extracts the value by index. It returns the found value, or
+// ErrNotFound (optionally wrapped) when the index is absent; any other error
+// is treated as an extraction failure and aborts the whole query.
 type IndexExtractor interface {
-	ExtractByIndex(index int) (any, bool)
-}
-
-// IndexExtractorContext is the interface that wraps the ExtractByIndex method.
-//
-// ExtractByIndex extracts the value by index.
-// It reports whether the index is found and returns the found value.
-type IndexExtractorContext interface {
-	ExtractByIndex(ctx context.Context, index int) (any, bool)
+	ExtractByIndex(ctx context.Context, index int) (any, error)
 }
 
 // Index represents an extractor to access the value by index.
@@ -27,7 +20,7 @@ type IndexExtractorContext interface {
 // For slices and arrays, a negative index accesses the sequence from the
 // end: -1 is the last element, -2 is the second to last, and so on,
 // following the convention of RFC 9535 (JSONPath). An index that remains
-// out of range after this normalization is reported as not found.
+// out of range after this normalization is reported as absent.
 //
 // For maps with an integer-kinded key type (and interface-keyed maps
 // holding int keys), the index is looked up as the literal map key with no
@@ -36,43 +29,32 @@ type IndexExtractorContext interface {
 // key policies of protobuf and CEL: key lookup by equality is unreliable
 // for floating-point values.
 //
-// Note that a value implementing IndexExtractor or IndexExtractorContext
-// receives the index as given (possibly negative); handling negative
-// indices is up to the implementation.
+// Note that a value implementing IndexExtractor receives the index as given
+// (possibly negative); handling negative indices is up to the
+// implementation.
 type Index struct {
 	index int
 }
 
-// Extract extracts the value from v by index.
-// It reports whether the index is found and returns the found value.
-//
-// If v implements the IndexExtractor interface, this method extracts by calling v.ExtractByIndex.
-func (e *Index) Extract(v reflect.Value) (reflect.Value, bool) {
-	return e.ExtractContext(context.Background(), v)
-}
-
-// ExtractContext extracts the value from v by index, passing ctx to a
-// context-aware extractor if v implements one.
-//
-// If v implements the IndexExtractorContext interface, this method extracts by
-// calling v.ExtractByIndex with ctx; otherwise it falls back to IndexExtractor.
-func (e *Index) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
+// Extract extracts the value from v by index, passing ctx to
+// v.ExtractByIndex if v implements the IndexExtractor interface. It returns
+// ErrNotFound (possibly wrapped) when the index is absent.
+func (e *Index) Extract(ctx context.Context, v reflect.Value) (reflect.Value, error) {
 	// CanInterface is required: values obtained from unexported fields are
 	// read-only and Interface would panic on them.
 	if v.IsValid() && v.CanInterface() {
-		if i, ok := v.Interface().(IndexExtractorContext); ok {
-			x, ok := i.ExtractByIndex(ctx, e.index)
-			return reflect.ValueOf(x), ok
-		}
 		if i, ok := v.Interface().(IndexExtractor); ok {
-			x, ok := i.ExtractByIndex(e.index)
-			return reflect.ValueOf(x), ok
+			x, err := i.ExtractByIndex(ctx, e.index)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			return reflect.ValueOf(x), nil
 		}
 	}
 	return e.extract(v)
 }
 
-func (e *Index) extract(v reflect.Value) (reflect.Value, bool) {
+func (e *Index) extract(v reflect.Value) (reflect.Value, error) {
 	v = elem(v)
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
@@ -83,7 +65,7 @@ func (e *Index) extract(v reflect.Value) (reflect.Value, bool) {
 			i += v.Len()
 		}
 		if 0 <= i && i < v.Len() {
-			return v.Index(i), true
+			return v.Index(i), nil
 		}
 	case reflect.Map:
 		// An index into a map is the literal map key: maps have no order,
@@ -93,10 +75,10 @@ func (e *Index) extract(v reflect.Value) (reflect.Value, bool) {
 			break
 		}
 		if x := v.MapIndex(key); x.IsValid() {
-			return x, true
+			return x, nil
 		}
 	}
-	return reflect.Value{}, false
+	return reflect.Value{}, ErrNotFound
 }
 
 // mapKey converts the index to a map key of type kt. It reports false when

@@ -1,8 +1,12 @@
 package query
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -55,14 +59,14 @@ func TestQuery_Extract(t *testing.T) {
 				expected: "value",
 			},
 			"typed nil": {
-				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
-					return reflect.ValueOf((*int)(nil)), true
+				query: New().Append(extractorFunc(func(_ context.Context, v reflect.Value) (reflect.Value, error) {
+					return reflect.ValueOf((*int)(nil)), nil
 				})),
 				expected: (*int)(nil),
 			},
 			"non-typed nil": {
-				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
-					return reflect.ValueOf(nil), true
+				query: New().Append(extractorFunc(func(_ context.Context, v reflect.Value) (reflect.Value, error) {
+					return reflect.ValueOf(nil), nil
 				})),
 				expected: nil,
 			},
@@ -95,19 +99,19 @@ func TestQuery_Extract(t *testing.T) {
 			"CustomExtractFunc": {
 				query: New(
 					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
-						return func(v reflect.Value) (reflect.Value, bool) {
-							vv, ok := f(v)
-							if ok {
+						return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+							vv, err := f(ctx, v)
+							if err == nil {
 								if vv.Kind() == reflect.String && vv.CanInterface() {
-									return reflect.ValueOf("aaa" + vv.Interface().(string)), true
+									return reflect.ValueOf("aaa" + vv.Interface().(string)), nil
 								}
 							}
-							return vv, true
+							return vv, nil
 						}
 					}),
 					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
-						return func(v reflect.Value) (reflect.Value, bool) {
-							return reflect.ValueOf("bbb"), true
+						return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+							return reflect.ValueOf("bbb"), nil
 						}
 					}),
 				).Index(0),
@@ -116,7 +120,7 @@ func TestQuery_Extract(t *testing.T) {
 			"use CustomExtractFunc instead of CustomStructFieldNameGetter": {
 				query: New(
 					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
-						return func(v reflect.Value) (reflect.Value, bool) {
+						return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
 							v = elem(v)
 							if v.Kind() == reflect.Struct {
 								m := map[string]any{}
@@ -132,9 +136,9 @@ func TestQuery_Extract(t *testing.T) {
 										}
 									}
 								}
-								return f(reflect.ValueOf(m))
+								return f(ctx, reflect.ValueOf(m))
 							}
-							return f(v)
+							return f(ctx, v)
 						}
 					}),
 				).Key("FOO_BAR"),
@@ -145,7 +149,7 @@ func TestQuery_Extract(t *testing.T) {
 
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				got, err := test.query.Extract(test.target)
+				got, err := test.query.Extract(context.Background(), test.target)
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err)
 				}
@@ -166,16 +170,16 @@ func TestQuery_Extract(t *testing.T) {
 			target any
 		}{
 			"unexported field (can not access)": {
-				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
-					return reflect.ValueOf(test{}).FieldByName("unexported"), true
+				query: New().Append(extractorFunc(func(_ context.Context, v reflect.Value) (reflect.Value, error) {
+					return reflect.ValueOf(test{}).FieldByName("unexported"), nil
 				})),
 			},
-			"CustomExtractFunc returns not ok": {
+			"CustomExtractFunc returns ErrNotFound": {
 				query: New(
 					CustomExtractFunc(func(f ExtractFunc) ExtractFunc {
-						return func(v reflect.Value) (reflect.Value, bool) {
-							vv, _ := f(v)
-							return vv, false
+						return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+							vv, _ := f(ctx, v)
+							return vv, ErrNotFound
 						}
 					}),
 				).Index(0),
@@ -185,7 +189,7 @@ func TestQuery_Extract(t *testing.T) {
 
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				if _, err := test.query.Extract(test.target); err == nil {
+				if _, err := test.query.Extract(context.Background(), test.target); err == nil {
 					t.Fatal("no error")
 				}
 			})
@@ -193,10 +197,125 @@ func TestQuery_Extract(t *testing.T) {
 	})
 }
 
-type extractorFunc func(reflect.Value) (reflect.Value, bool)
+type extractorFunc func(context.Context, reflect.Value) (reflect.Value, error)
 
-func (f extractorFunc) Extract(v reflect.Value) (reflect.Value, bool) {
-	return f(v)
+func (f extractorFunc) Extract(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+	return f(ctx, v)
 }
 
 func (f extractorFunc) String() string { return "" }
+
+type ctxKeyTest struct{}
+
+// ctxValueExtractor returns the value stored in the context, to verify the
+// caller's context reaches the extractor.
+type ctxValueExtractor struct{}
+
+func (e *ctxValueExtractor) ExtractByIndex(ctx context.Context, _ int) (any, error) {
+	if v, ok := ctx.Value(ctxKeyTest{}).(string); ok {
+		return v, nil
+	}
+	return nil, ErrNotFound
+}
+
+func TestQuery_Extract_ContextPropagation(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ctxKeyTest{}, "from-caller")
+	got, err := New().Index(0).Extract(ctx, &ctxValueExtractor{})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if got != "from-caller" {
+		t.Fatalf("expected propagated context value but got %v", got)
+	}
+}
+
+func TestQuery_Extract_NotFound(t *testing.T) {
+	tests := map[string]struct {
+		query          *Query
+		target         any
+		expectFailedAt string
+	}{
+		"fails at the last extractor": {
+			query:          New().Key("a").Key("b"),
+			target:         map[string]any{"a": map[string]any{}},
+			expectFailedAt: ".a.b",
+		},
+		"fails at an intermediate extractor": {
+			query:          New().Key("a").Key("b"),
+			target:         map[string]any{},
+			expectFailedAt: ".a",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := test.query.Extract(context.Background(), test.target)
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if !errors.Is(err, ErrNotFound) {
+				t.Fatalf("expected ErrNotFound but got: %s", err)
+			}
+			var nfe *NotFoundError
+			if !errors.As(err, &nfe) {
+				t.Fatalf("expected *NotFoundError but got %T", err)
+			}
+			if got, expect := nfe.Query, test.query.String(); got != expect {
+				t.Errorf("Query: expected %q but got %q", expect, got)
+			}
+			if got := nfe.FailedAt; got != test.expectFailedAt {
+				t.Errorf("FailedAt: expected %q but got %q", test.expectFailedAt, got)
+			}
+			if got, expect := err.Error(), fmt.Sprintf("%q not found", test.query.String()); got != expect {
+				t.Errorf("message: expected %q but got %q", expect, got)
+			}
+		})
+	}
+}
+
+// interruptedExtractor simulates a blocking extractor whose wait was cut
+// short by the context ending.
+type interruptedExtractor struct{}
+
+func (e *interruptedExtractor) ExtractByIndex(ctx context.Context, _ int) (any, error) {
+	return nil, ctx.Err()
+}
+
+func TestQuery_Extract_FailurePropagation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := New().Key("messages").Index(0).Extract(ctx, map[string]any{
+		"messages": &interruptedExtractor{},
+	})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if errors.Is(err, ErrNotFound) {
+		t.Fatalf("a failure must not match ErrNotFound: %s", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected the context error to propagate but got: %s", err)
+	}
+	if got, expect := err.Error(), ".messages[0]: context canceled"; got != expect {
+		t.Errorf("expected %q but got %q", expect, got)
+	}
+}
+
+func TestQuery_Extract_Concurrent(t *testing.T) {
+	q := New().Key("a").Index(1)
+	target := map[string][]string{"a": {"x", "y"}}
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				got, err := q.Extract(context.Background(), target)
+				if err != nil || got != "y" {
+					t.Errorf("unexpected result: %v, %v", got, err)
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
+}
