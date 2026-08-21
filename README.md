@@ -13,9 +13,29 @@ See usage and example in [GoDoc](https://godoc.org/github.com/zoncoen/query-go).
 `ParseString` parses a query string and returns the query which extracts the value.
 
 ```go
+import query "github.com/zoncoen/query-go/v2"
+
 q, err := query.ParseString(`$.key[0].key['key']`)
-v, err := q.Extract(target)
+v, err := q.Extract(ctx, target)
 ```
+
+When the queried element is absent, the returned error matches
+`query.ErrNotFound` via `errors.Is` (and `errors.As` yields a
+`*query.NotFoundError` carrying the failed position); any other error is an
+extraction failure reported by an extractor, such as a context cancellation
+that interrupted a blocking extractor.
+
+## Migrating from v1
+
+- The module path is `github.com/zoncoen/query-go/v2`.
+- `Query.Extract` takes a `context.Context`; `ExtractContext` is gone.
+- The extractor interfaces are consolidated: `KeyExtractor` and
+  `IndexExtractor` now take a context and return `(any, error)` — return
+  `query.ErrNotFound` for an absent element instead of `false`. The
+  `...Context` interface variants are gone.
+- `ExtractFunc` is `func(ctx context.Context, v reflect.Value) (reflect.Value, error)`.
+- Extractors can now report failures distinct from absence: any non-ErrNotFound
+  error aborts the extraction and is returned to the caller.
 
 ## Query Syntax
 
