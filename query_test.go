@@ -36,8 +36,8 @@ func TestQuery_Extract(t *testing.T) {
 
 		tests := map[string]struct {
 			query    *Query
-			target   interface{}
-			expected interface{}
+			target   any
+			expected any
 		}{
 			"query is nil": {
 				query:    nil,
@@ -119,8 +119,8 @@ func TestQuery_Extract(t *testing.T) {
 						return func(v reflect.Value) (reflect.Value, bool) {
 							v = elem(v)
 							if v.Kind() == reflect.Struct {
-								m := map[string]interface{}{}
-								for i := 0; i < v.Type().NumField(); i++ {
+								m := map[string]any{}
+								for i := range v.Type().NumField() {
 									field := v.Type().FieldByIndex([]int{i})
 									if s := field.Tag.Get("json"); s != "" {
 										name, _, _ := strings.Cut(s, ",")
@@ -144,7 +144,6 @@ func TestQuery_Extract(t *testing.T) {
 		}
 
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				got, err := test.query.Extract(test.target)
 				if err != nil {
@@ -164,7 +163,7 @@ func TestQuery_Extract(t *testing.T) {
 
 		tests := map[string]struct {
 			query  *Query
-			target interface{}
+			target any
 		}{
 			"unexported field (can not access)": {
 				query: New().Append(extractorFunc(func(v reflect.Value) (reflect.Value, bool) {
@@ -185,7 +184,6 @@ func TestQuery_Extract(t *testing.T) {
 		}
 
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				if _, err := test.query.Extract(test.target); err == nil {
 					t.Fatal("no error")

@@ -56,7 +56,7 @@ func TestIndex_Extract_FallsBackToBackground(t *testing.T) {
 // plainIndexExtractor only implements the context-less interface.
 type plainIndexExtractor struct{ called bool }
 
-func (e *plainIndexExtractor) ExtractByIndex(_ int) (interface{}, bool) {
+func (e *plainIndexExtractor) ExtractByIndex(_ int) (any, bool) {
 	e.called = true
 	return "plain", true
 }

@@ -11,7 +11,7 @@ import (
 // ExtractByIndex extracts the value by index.
 // It reports whether the index is found and returns the found value.
 type IndexExtractor interface {
-	ExtractByIndex(index int) (interface{}, bool)
+	ExtractByIndex(index int) (any, bool)
 }
 
 // IndexExtractorContext is the interface that wraps the ExtractByIndex method.

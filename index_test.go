@@ -8,12 +8,12 @@ import (
 )
 
 type indexExtractor struct {
-	v interface{}
+	v any
 }
 
 type namedIntKey int
 
-func (f *indexExtractor) ExtractByIndex(_ int) (interface{}, bool) {
+func (f *indexExtractor) ExtractByIndex(_ int) (any, bool) {
 	if f.v != nil {
 		return f.v, true
 	}
@@ -24,8 +24,8 @@ func TestIndex_Extract(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		tests := map[string]struct {
 			index  int
-			v      interface{}
-			expect interface{}
+			v      any
+			expect any
 		}{
 			"slice": {
 				index: 0,
@@ -92,7 +92,7 @@ func TestIndex_Extract(t *testing.T) {
 			},
 			"interface-keyed map holding an int key": {
 				index: 1,
-				v: map[interface{}]string{
+				v: map[any]string{
 					"1": "string",
 					1:   "int",
 				},
@@ -110,7 +110,6 @@ func TestIndex_Extract(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				e := &Index{index: test.index}
 				v, ok := e.Extract(reflect.ValueOf(test.v))
@@ -126,7 +125,7 @@ func TestIndex_Extract(t *testing.T) {
 	t.Run("not found", func(t *testing.T) {
 		tests := map[string]struct {
 			index int
-			v     interface{}
+			v     any
 		}{
 			"target is nil": {
 				index: 0,
@@ -170,7 +169,7 @@ func TestIndex_Extract(t *testing.T) {
 			},
 			"interface-keyed map holding a differently typed integer key": {
 				index: 1,
-				v:     map[interface{}]string{int8(1): "int8"},
+				v:     map[any]string{int8(1): "int8"},
 			},
 			"index extractor returns false": {
 				index: 10,
@@ -178,7 +177,6 @@ func TestIndex_Extract(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				e := &Index{index: test.index}
 				v, ok := e.Extract(reflect.ValueOf(test.v))

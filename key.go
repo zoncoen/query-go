@@ -11,7 +11,7 @@ import (
 // ExtractByKey extracts the value by key.
 // It reports whether the key is found and returns the found value.
 type KeyExtractor interface {
-	ExtractByKey(key string) (interface{}, bool)
+	ExtractByKey(key string) (any, bool)
 }
 
 // KeyExtractorContext is the interface that wraps the ExtractByKey method.
@@ -107,7 +107,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 	case reflect.Struct:
 		inlines := []int{}
 		var unexported *reflect.Value
-		for i := 0; i < v.Type().NumField(); i++ {
+		for i := range v.Type().NumField() {
 			field := v.Type().FieldByIndex([]int{i})
 			fieldNames := []string{}
 			var inline bool
@@ -144,7 +144,6 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 				inline = true
 			}
 			for _, f := range e.isInlineFuncs {
-				f := f
 				if f(field) {
 					inlines = append(inlines, i)
 					break

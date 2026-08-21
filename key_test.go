@@ -11,10 +11,10 @@ import (
 )
 
 type keyExtractor struct {
-	v interface{}
+	v any
 }
 
-func (f *keyExtractor) ExtractByKey(_ string) (interface{}, bool) {
+func (f *keyExtractor) ExtractByKey(_ string) (any, bool) {
 	if f.v != nil {
 		return f.v, true
 	}
@@ -25,7 +25,7 @@ type keyExtractorContext struct {
 	v map[string]any
 }
 
-func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (interface{}, bool) {
+func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (any, bool) {
 	if f.v != nil {
 		if v, ok := f.v[name]; ok {
 			return v, true
@@ -66,8 +66,8 @@ func TestKey_Extract(t *testing.T) {
 			structTags         []string
 			customExtractFuncs []func(ExtractFunc) ExtractFunc
 			isInlineFuncs      []func(reflect.StructField) bool
-			v                  interface{}
-			expect             interface{}
+			v                  any
+			expect             any
 		}{
 			"map[string]string": {
 				key: "key",
@@ -86,7 +86,7 @@ func TestKey_Extract(t *testing.T) {
 			},
 			"map[interface{}]interface{}": {
 				key: "key",
-				v: map[interface{}]interface{}{
+				v: map[any]any{
 					0:     0,
 					"key": 1,
 				},
@@ -251,7 +251,6 @@ func TestKey_Extract(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				e := &Key{
 					key:                test.key,
@@ -275,7 +274,7 @@ func TestKey_Extract(t *testing.T) {
 			key           string
 			structTags    []string
 			isInlineFuncs []func(reflect.StructField) bool
-			v             interface{}
+			v             any
 		}{
 			"target is nil": {
 				key: "key",
@@ -361,7 +360,6 @@ func TestKey_Extract(t *testing.T) {
 			},
 		}
 		for name, test := range tests {
-			test := test
 			t.Run(name, func(t *testing.T) {
 				e := &Key{
 					key:        test.key,
@@ -415,7 +413,6 @@ func TestKey_String(t *testing.T) {
 		},
 	}
 	for name, test := range tests {
-		test := test
 		t.Run(name, func(t *testing.T) {
 			k := &Key{key: test.key}
 			if got := k.String(); got != test.expect {
@@ -444,7 +441,6 @@ func TestKey_Extract_UnexportedEmbeddedStruct(t *testing.T) {
 func TestKey_String_RoundTrip(t *testing.T) {
 	keys := []string{"aaa", "[", "]", ".", "\\", "'", "$", "$foo", "a$b", "a]b", "", "foo.bar-baz"}
 	for _, key := range keys {
-		key := key
 		t.Run(key, func(t *testing.T) {
 			q := New().Key(key)
 			got, err := ParseString(q.String())
