@@ -36,6 +36,13 @@ that interrupted a blocking extractor.
 - `ExtractFunc` is `func(ctx context.Context, v reflect.Value) (reflect.Value, error)`.
 - Extractors can now report failures distinct from absence: any non-ErrNotFound
   error aborts the extraction and is returned to the caller.
+- A type that is not migrated silently stops satisfying the interfaces and
+  falls back to reflection-based extraction. Add a compile-time assertion to
+  each implementation to catch this:
+
+  ```go
+  var _ query.KeyExtractor = (*MyType)(nil)
+  ```
 
 ## Query Syntax
 
