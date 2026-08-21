@@ -2,10 +2,9 @@ package query
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Query represents a query to extract the element from a value.
@@ -95,10 +94,10 @@ func (q *Query) ExtractContext(ctx context.Context, target interface{}) (interfa
 		var ok bool
 		v, ok = f(v)
 		if !ok {
-			return nil, errors.Errorf(`"%s" not found`, q.String())
+			return nil, fmt.Errorf(`"%s" not found`, q.String())
 		}
 		if v.IsValid() && !v.CanInterface() {
-			return nil, errors.Errorf("%s: can not access unexported field or method", q.String())
+			return nil, fmt.Errorf("%s: can not access unexported field or method", q.String())
 		}
 	}
 	if !v.IsValid() {
