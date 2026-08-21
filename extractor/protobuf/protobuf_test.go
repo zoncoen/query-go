@@ -2,6 +2,8 @@ package protobuf
 
 import (
 	"context"
+	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -166,4 +168,33 @@ func TestOneofIsInlineStructFieldFunc(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestExtractFunc_PropagatesFailures(t *testing.T) {
+	// A custom func downstream of ExtractFunc that fails hard whenever the
+	// probe value is offered, simulating e.g. a canceled blocking extractor.
+	failing := func(f query.ExtractFunc) query.ExtractFunc {
+		return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
+			if v.IsValid() && v.CanInterface() {
+				if _, ok := v.Interface().(query.KeyExtractor); ok {
+					return reflect.Value{}, context.Canceled
+				}
+			}
+			return f(ctx, v)
+		}
+	}
+	q := query.New(
+		query.CustomExtractFunc(ExtractFunc()),
+		query.CustomExtractFunc(failing),
+	).Key("nosuch")
+	_, err := q.Extract(context.Background(), &testpb.OneofMessage_A{})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if errors.Is(err, query.ErrNotFound) {
+		t.Fatalf("a failure must not be classified as absence: %s", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled to propagate but got: %s", err)
+	}
 }

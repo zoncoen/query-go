@@ -2,6 +2,7 @@ package protobuf
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -27,8 +28,16 @@ func ExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 				for i := 0; i < v.Type().NumField(); i++ {
 					field := v.Type().FieldByIndex([]int{i})
 					if s := field.Tag.Get("protobuf"); s != "" {
-						if v, err := f(ctx, reflect.ValueOf(&keyExtractor{v})); err == nil {
+						v, err := f(ctx, reflect.ValueOf(&keyExtractor{v}))
+						if err == nil {
 							return v, nil
+						}
+						if !errors.Is(err, query.ErrNotFound) {
+							// A failure is not an absence: do not fall back to
+							// the next field or the plain struct lookup, which
+							// would mask e.g. a canceled blocking extractor as
+							// "not found".
+							return reflect.Value{}, err
 						}
 					}
 				}
