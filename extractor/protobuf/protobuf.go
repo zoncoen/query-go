@@ -5,13 +5,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 )
 
 // ExtractFunc is a function for query.CustomExtractFunc option to extract values by protobuf struct tag.
 func ExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 	return func(f query.ExtractFunc) query.ExtractFunc {
-		return func(in reflect.Value) (reflect.Value, bool) {
+		return func(ctx context.Context, in reflect.Value) (reflect.Value, error) {
 			v := in
 			for {
 				if v.IsValid() {
@@ -27,13 +27,13 @@ func ExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 				for i := 0; i < v.Type().NumField(); i++ {
 					field := v.Type().FieldByIndex([]int{i})
 					if s := field.Tag.Get("protobuf"); s != "" {
-						if v, found := f(reflect.ValueOf(&keyExtractor{v})); found {
-							return v, true
+						if v, err := f(ctx, reflect.ValueOf(&keyExtractor{v})); err == nil {
+							return v, nil
 						}
 					}
 				}
 			}
-			return f(in)
+			return f(ctx, in)
 		}
 	}
 }
@@ -42,8 +42,8 @@ type keyExtractor struct {
 	v reflect.Value
 }
 
-// ExtractByKey implements KeyExtractorContext interface.
-func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, bool) {
+// ExtractByKey implements the query.KeyExtractor interface.
+func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, error) {
 	ci := query.IsCaseInsensitive(ctx)
 	if ci {
 		key = strings.ToLower(key)
@@ -65,7 +65,7 @@ func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, bool)
 								if field := e.v.Field(i); field.CanInterface() {
 									resp = field.Interface()
 								}
-								return resp, true
+								return resp, nil
 							}
 						}
 					}
@@ -73,7 +73,7 @@ func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, bool)
 			}
 		}
 	}
-	return nil, false
+	return nil, query.ErrNotFound
 }
 
 // OneofIsInlineStructFieldFunc is a function for query.CustomIsInlineStructFieldFunc option to enable extracting values even if the oneof field name is omitted.

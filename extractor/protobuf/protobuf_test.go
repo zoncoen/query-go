@@ -1,11 +1,12 @@
 package protobuf
 
 import (
+	"context"
 	"strings"
 	"testing"
 
-	"github.com/zoncoen/query-go"
 	testpb "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb"
+	"github.com/zoncoen/query-go/v2"
 )
 
 func TestExtractFunc(t *testing.T) {
@@ -86,7 +87,7 @@ func TestExtractFunc(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				got, err := test.query.Extract(test.v)
+				got, err := test.query.Extract(context.Background(), test.v)
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err)
 				}
@@ -119,7 +120,7 @@ func TestExtractFunc(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				_, err := test.query.Extract(test.v)
+				_, err := test.query.Extract(context.Background(), test.v)
 				if err == nil {
 					t.Fatal("no error")
 				}
@@ -155,7 +156,7 @@ func TestOneofIsInlineStructFieldFunc(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				got, err := test.query.Extract(test.v)
+				got, err := test.query.Extract(context.Background(), test.v)
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err)
 				}

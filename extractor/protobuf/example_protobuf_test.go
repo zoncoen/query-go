@@ -1,10 +1,11 @@
 package protobuf_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 
 	protobufextractor "github.com/zoncoen/query-go/extractor/protobuf"
 	testpb "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb"
@@ -22,7 +23,7 @@ func ExampleExtractFunc() {
 		query.CustomExtractFunc(protobufextractor.ExtractFunc()),
 		query.CustomIsInlineStructFieldFunc(protobufextractor.OneofIsInlineStructFieldFunc()),
 	).Key("b").Key("bar_value")
-	got, err := q.Extract(v)
+	got, err := q.Extract(context.Background(), v)
 	if err != nil {
 		log.Fatal(err)
 	}

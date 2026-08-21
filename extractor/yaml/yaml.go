@@ -10,7 +10,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 )
 
 var mapSliceType = reflect.TypeOf(yaml.MapSlice{})
@@ -18,7 +18,7 @@ var mapSliceType = reflect.TypeOf(yaml.MapSlice{})
 // MapSliceExtractFunc is a function for query.CustomExtractFunc option to extract values from yaml.MapSlice.
 func MapSliceExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 	return func(f query.ExtractFunc) query.ExtractFunc {
-		return func(in reflect.Value) (reflect.Value, bool) {
+		return func(ctx context.Context, in reflect.Value) (reflect.Value, error) {
 			v := in
 			for {
 				if v.IsValid() {
@@ -35,14 +35,14 @@ func MapSliceExtractFunc() func(query.ExtractFunc) query.ExtractFunc {
 					if v.CanInterface() {
 						s, ok := v.Interface().(yaml.MapSlice)
 						if ok {
-							return f(reflect.ValueOf(&keyExtractor{
+							return f(ctx, reflect.ValueOf(&keyExtractor{
 								v: s,
 							}))
 						}
 					}
 				}
 			}
-			return f(in)
+			return f(ctx, in)
 		}
 	}
 }
@@ -51,8 +51,8 @@ type keyExtractor struct {
 	v yaml.MapSlice
 }
 
-// ExtractByKey implements the query.KeyExtractorContext interface.
-func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (interface{}, bool) {
+// ExtractByKey implements the query.KeyExtractor interface.
+func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (any, error) {
 	ci := query.IsCaseInsensitive(ctx)
 	if ci {
 		key = strings.ToLower(key)
@@ -64,9 +64,9 @@ func (e *keyExtractor) ExtractByKey(ctx context.Context, key string) (interface{
 				k = strings.ToLower(k)
 			}
 			if key == k {
-				return i.Value, true
+				return i.Value, nil
 			}
 		}
 	}
-	return nil, false
+	return nil, query.ErrNotFound
 }
