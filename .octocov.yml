@@ -5,12 +5,15 @@ coverage:
   - ./coverage.out
   - ./extractor/yaml/coverage.out
   - ./extractor/protobuf/coverage.out
+  exclude:
+  - '**/testdata/**'
   badge:
     path: docs/coverage.svg
 codeToTestRatio:
   code:
     - '**/*.go'
     - '!**/*_test.go'
+    - '!**/testdata/**'
   test:
     - '**/*_test.go'
   badge:
