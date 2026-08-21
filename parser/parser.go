@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zoncoen/query-go/ast"
-	"github.com/zoncoen/query-go/token"
+	"github.com/zoncoen/query-go/v2/ast"
+	"github.com/zoncoen/query-go/v2/token"
 )
 
 // Parser represents a parser.

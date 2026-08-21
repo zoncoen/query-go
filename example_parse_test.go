@@ -3,7 +3,7 @@ package query_test
 import (
 	"fmt"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 )
 
 type S struct {

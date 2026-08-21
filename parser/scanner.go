@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/zoncoen/query-go/token"
+	"github.com/zoncoen/query-go/v2/token"
 )
 
 // eof represents invalid code points.

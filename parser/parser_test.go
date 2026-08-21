@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/zoncoen/query-go/ast"
+	"github.com/zoncoen/query-go/v2/ast"
 )
 
 func TestParser_Parse(t *testing.T) {

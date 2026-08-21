@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 )
 
 // Person represents a person.
