@@ -40,9 +40,11 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
-    - name: Use the local root module
+    - name: Resolve the root module locally
       working-directory: ${{ github.workspace }}
-      run: go work init . ./extractor/yaml ./extractor/protobuf
+      run: |
+        go work init ./extractor/yaml ./extractor/protobuf
+        go work edit -replace github.com/zoncoen/query-go/v2=.
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
@@ -66,9 +68,11 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v7
-    - name: Use the local root module
+    - name: Resolve the root module locally
       working-directory: ${{ github.workspace }}
-      run: go work init . ./extractor/yaml ./extractor/protobuf
+      run: |
+        go work init ./extractor/yaml ./extractor/protobuf
+        go work edit -replace github.com/zoncoen/query-go/v2=.
     - name: Test
       run: go test -race ./... -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
     - uses: actions/upload-artifact@v7
@@ -113,6 +117,11 @@ jobs:
       uses: actions/setup-go@v7.0.0
       with:
         go-version: stable
+    - name: Resolve the root module locally
+      if: matrix.dir != '.'
+      run: |
+        go work init ./extractor/yaml ./extractor/protobuf
+        go work edit -replace github.com/zoncoen/query-go/v2=.
     - name: gofmt
       working-directory: ${{ matrix.dir }}
       run: |

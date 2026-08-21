@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"reflect"
 	"strings"
@@ -14,32 +15,32 @@ type keyExtractor struct {
 	v any
 }
 
-func (f *keyExtractor) ExtractByKey(_ string) (any, bool) {
+func (f *keyExtractor) ExtractByKey(_ context.Context, _ string) (any, error) {
 	if f.v != nil {
-		return f.v, true
+		return f.v, nil
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 type keyExtractorContext struct {
 	v map[string]any
 }
 
-func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (any, bool) {
+func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (any, error) {
 	if f.v != nil {
 		if v, ok := f.v[name]; ok {
-			return v, true
+			return v, nil
 		}
 		if IsCaseInsensitive(ctx) {
 			name = strings.ToLower(name)
 			for k, v := range f.v {
 				if strings.ToLower(k) == name {
-					return v, true
+					return v, nil
 				}
 			}
 		}
 	}
-	return nil, false
+	return nil, ErrNotFound
 }
 
 type testTags struct {
@@ -181,19 +182,19 @@ func TestKey_Extract(t *testing.T) {
 				structTags: []string{"json", "yaml"},
 				customExtractFuncs: []func(ExtractFunc) ExtractFunc{
 					func(f ExtractFunc) ExtractFunc {
-						return func(v reflect.Value) (reflect.Value, bool) {
+						return func(ctx context.Context, v reflect.Value) (reflect.Value, error) {
 							if v.CanInterface() {
 								if vv, ok := v.Interface().(map[string]string); ok {
 									mp := map[string]any{}
 									for k, v := range vv {
 										mp[k] = v + v
 									}
-									if v, ok := f(reflect.ValueOf(&keyExtractorContext{v: mp})); ok {
-										return v, true
+									if v, err := f(ctx, reflect.ValueOf(&keyExtractorContext{v: mp})); err == nil {
+										return v, nil
 									}
 								}
 							}
-							return f(v)
+							return f(ctx, v)
 						}
 					},
 				},
@@ -259,9 +260,9 @@ func TestKey_Extract(t *testing.T) {
 					customExtractFuncs: test.customExtractFuncs,
 					isInlineFuncs:      test.isInlineFuncs,
 				}
-				v, ok := e.Extract(reflect.ValueOf(test.v))
-				if !ok {
-					t.Fatal("not found")
+				v, err := e.Extract(context.Background(), reflect.ValueOf(test.v))
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err)
 				}
 				if diff := cmp.Diff(test.expect, v.Interface()); diff != "" {
 					t.Errorf("differs: (-want +got)\n%s", diff)
@@ -365,9 +366,12 @@ func TestKey_Extract(t *testing.T) {
 					key:        test.key,
 					structTags: test.structTags,
 				}
-				v, ok := e.Extract(reflect.ValueOf(test.v))
-				if ok {
+				v, err := e.Extract(context.Background(), reflect.ValueOf(test.v))
+				if err == nil {
 					t.Fatalf("unexpected value: %#v", v)
+				}
+				if !errors.Is(err, ErrNotFound) {
+					t.Fatalf("expected ErrNotFound but got: %s", err)
 				}
 			})
 		}
@@ -429,7 +433,7 @@ func TestKey_Extract_UnexportedEmbeddedStruct(t *testing.T) {
 	// embedded field back into Key.Extract; it must not panic in Interface.
 	// Exported fields promoted through an unexported embedded field are
 	// interfaceable, so the extraction succeeds.
-	got, err := New().Key("Foo").Extract(v)
+	got, err := New().Key("Foo").Extract(context.Background(), v)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

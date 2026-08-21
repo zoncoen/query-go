@@ -2,24 +2,18 @@ package query
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 )
 
 // KeyExtractor is the interface that wraps the ExtractByKey method.
 //
-// ExtractByKey extracts the value by key.
-// It reports whether the key is found and returns the found value.
+// ExtractByKey extracts the value by key. It returns the found value, or
+// ErrNotFound (optionally wrapped) when the key is absent; any other error
+// is treated as an extraction failure and aborts the whole query.
 type KeyExtractor interface {
-	ExtractByKey(key string) (any, bool)
-}
-
-// KeyExtractorContext is the interface that wraps the ExtractByKey method.
-//
-// ExtractByKey extracts the value by key.
-// It reports whether the key is found and returns the found value.
-type KeyExtractorContext interface {
-	ExtractByKey(ctx context.Context, key string) (any, bool)
+	ExtractByKey(ctx context.Context, key string) (any, error)
 }
 
 // Key represents an extractor to access the value by key.
@@ -32,36 +26,26 @@ type Key struct {
 	isInlineFuncs      []func(reflect.StructField) bool
 }
 
-// Extract extracts the value from v by key.
-// It reports whether the key is found and returns the found value.
-//
-// If v implements the KeyExtractor interface, this method extracts by calling v.ExtractByKey.
-func (e *Key) Extract(v reflect.Value) (reflect.Value, bool) {
-	return e.ExtractContext(context.Background(), v)
-}
-
-// ExtractContext extracts the value from v by key, passing ctx (extended
-// with the query options) to a context-aware extractor if v implements one.
-//
-// If v implements the KeyExtractorContext interface, this method extracts by
-// calling v.ExtractByKey with ctx; otherwise it falls back to KeyExtractor.
-func (e *Key) ExtractContext(ctx context.Context, v reflect.Value) (reflect.Value, bool) {
+// Extract extracts the value from v by key, passing ctx (extended with the
+// query options) to v.ExtractByKey if v implements the KeyExtractor
+// interface. It returns ErrNotFound (possibly wrapped) when the key is
+// absent.
+func (e *Key) Extract(ctx context.Context, v reflect.Value) (reflect.Value, error) {
 	// CanInterface is required: values obtained from unexported fields are
 	// read-only and Interface would panic on them.
 	if v.IsValid() && v.CanInterface() {
-		if i, ok := v.Interface().(KeyExtractorContext); ok {
-			x, ok := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
-			return reflect.ValueOf(x), ok
-		}
 		if i, ok := v.Interface().(KeyExtractor); ok {
-			x, ok := i.ExtractByKey(e.key)
-			return reflect.ValueOf(x), ok
+			x, err := i.ExtractByKey(withCaseInsensitive(ctx, e.caseInsensitive), e.key)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			return reflect.ValueOf(x), nil
 		}
 	}
-	return e.extract(v)
+	return e.extract(ctx, v)
 }
 
-func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
+func (e *Key) extract(ctx context.Context, v reflect.Value) (reflect.Value, error) {
 	v = elem(v)
 	switch v.Kind() {
 	case reflect.Map:
@@ -69,10 +53,10 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 			// Fast path: an exact match is a map lookup, not a linear scan.
 			// It also takes precedence over case-insensitive matches.
 			if x := v.MapIndex(reflect.ValueOf(e.key).Convert(kt)); x.IsValid() {
-				return x, true
+				return x, nil
 			}
 			if !e.caseInsensitive {
-				return reflect.Value{}, false
+				return reflect.Value{}, ErrNotFound
 			}
 		}
 		// Track the smallest matching key so that a case-insensitive lookup
@@ -89,7 +73,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 			}
 			ks := k.String()
 			if ks == e.key {
-				return v.MapIndex(k), true
+				return v.MapIndex(k), nil
 			}
 			if !e.caseInsensitive {
 				continue
@@ -102,7 +86,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 			}
 		}
 		if found.IsValid() {
-			return found, true
+			return found, nil
 		}
 	case reflect.Struct:
 		inlines := []int{}
@@ -136,7 +120,7 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 					if isUnexportedField(val) {
 						unexported = &val
 					} else {
-						return val, true
+						return val, nil
 					}
 				}
 			}
@@ -159,21 +143,25 @@ func (e *Key) extract(v reflect.Value) (reflect.Value, bool) {
 				f = e.customExtractFuncs[i](f)
 			}
 			for _, i := range inlines {
-				val, ok := f(v.FieldByIndex([]int{i}))
-				if ok {
+				val, err := f(ctx, v.FieldByIndex([]int{i}))
+				if err == nil {
 					if isUnexportedField(val) {
 						unexported = &val
 					} else {
-						return val, true
+						return val, nil
 					}
+				} else if !errors.Is(err, ErrNotFound) {
+					// A failure inside an inlined field is a failure of the
+					// whole lookup, not an absence.
+					return reflect.Value{}, err
 				}
 			}
 		}
 		if unexported != nil {
-			return *unexported, true
+			return *unexported, nil
 		}
 	}
-	return reflect.Value{}, false
+	return reflect.Value{}, ErrNotFound
 }
 
 func (e *Key) getFieldName(field reflect.StructField) string {

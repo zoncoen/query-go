@@ -1,11 +1,12 @@
 package yaml_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 
 	"github.com/goccy/go-yaml"
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 
 	yamlextractor "github.com/zoncoen/query-go/extractor/yaml"
 )
@@ -21,7 +22,7 @@ func ExampleMapSliceExtractFunc() {
 		query.CaseInsensitive(),
 		query.CustomExtractFunc(yamlextractor.MapSliceExtractFunc()),
 	).Index(0).Key("FOO")
-	got, err := q.Extract(v)
+	got, err := q.Extract(context.Background(), v)
 	if err != nil {
 		log.Fatal(err)
 	}

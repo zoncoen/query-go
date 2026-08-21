@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/zoncoen/query-go/ast"
-	"github.com/zoncoen/query-go/parser"
+	"github.com/zoncoen/query-go/v2/ast"
+	"github.com/zoncoen/query-go/v2/parser"
 )
 
 // Parse parses a query string via r and returns the corresponding Query.

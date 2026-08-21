@@ -1,12 +1,13 @@
 package yaml
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/goccy/go-yaml"
 
-	"github.com/zoncoen/query-go"
+	"github.com/zoncoen/query-go/v2"
 )
 
 func TestMapSliceExtractFunc(t *testing.T) {
@@ -88,7 +89,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				got, err := test.query.Extract(test.v)
+				got, err := test.query.Extract(context.Background(), test.v)
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err)
 				}
@@ -127,7 +128,7 @@ func TestMapSliceExtractFunc(t *testing.T) {
 		for name, test := range tests {
 			test := test
 			t.Run(name, func(t *testing.T) {
-				_, err := test.query.Extract(test.v)
+				_, err := test.query.Extract(context.Background(), test.v)
 				if err == nil {
 					t.Fatal("no error")
 				}

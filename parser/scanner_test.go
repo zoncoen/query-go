@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zoncoen/query-go/token"
+	"github.com/zoncoen/query-go/v2/token"
 )
 
 func TestScanner_Read(t *testing.T) {
