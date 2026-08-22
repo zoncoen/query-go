@@ -1,12 +1,12 @@
 # query-go
 
-[![GoDoc](https://godoc.org/github.com/zoncoen/query-go?status.svg)](https://godoc.org/github.com/zoncoen/query-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/zoncoen/query-go/v2.svg)](https://pkg.go.dev/github.com/zoncoen/query-go/v2)
 ![coverage](docs/coverage.svg) ![ratio](docs/ratio.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zoncoen/query-go)](https://goreportcard.com/report/github.com/zoncoen/query-go)
 ![LICENSE](https://img.shields.io/github/license/zoncoen/query-go.svg)
 
 This is a Go package to extract element from a Go value by a query string like `$.key[0].key['key']`.
-See usage and example in [GoDoc](https://godoc.org/github.com/zoncoen/query-go).
+See usage and example in the [API reference](https://pkg.go.dev/github.com/zoncoen/query-go/v2).
 
 ## Basic Usage
 

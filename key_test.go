@@ -22,11 +22,11 @@ func (f *keyExtractor) ExtractByKey(_ context.Context, _ string) (any, error) {
 	return nil, ErrNotFound
 }
 
-type keyExtractorContext struct {
+type caseInsensitiveKeyExtractor struct {
 	v map[string]any
 }
 
-func (f *keyExtractorContext) ExtractByKey(ctx context.Context, name string) (any, error) {
+func (f *caseInsensitiveKeyExtractor) ExtractByKey(ctx context.Context, name string) (any, error) {
 	if f.v != nil {
 		if v, ok := f.v[name]; ok {
 			return v, nil
@@ -189,7 +189,7 @@ func TestKey_Extract(t *testing.T) {
 									for k, v := range vv {
 										mp[k] = v + v
 									}
-									if v, err := f(ctx, reflect.ValueOf(&keyExtractorContext{v: mp})); err == nil {
+									if v, err := f(ctx, reflect.ValueOf(&caseInsensitiveKeyExtractor{v: mp})); err == nil {
 										return v, nil
 									}
 								}
@@ -243,7 +243,7 @@ func TestKey_Extract(t *testing.T) {
 			"key extractor context": {
 				key:             "key",
 				caseInsensitive: true,
-				v: &keyExtractorContext{
+				v: &caseInsensitiveKeyExtractor{
 					v: map[string]any{
 						"KEY": "value",
 					},
@@ -353,7 +353,7 @@ func TestKey_Extract(t *testing.T) {
 			},
 			"key extractor context (case sensitive)": {
 				key: "key",
-				v: &keyExtractorContext{
+				v: &caseInsensitiveKeyExtractor{
 					v: map[string]any{
 						"KEY": "value",
 					},

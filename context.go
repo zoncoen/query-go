@@ -1,6 +1,9 @@
 package query
 
-import "context"
+import (
+	"context"
+	"slices"
+)
 
 // caseInsensitiveKey is a named type so that the context key cannot collide
 // with a key of another package: values of an anonymous struct{} type all
@@ -33,9 +36,12 @@ func withOptions(ctx context.Context, opts []Option) context.Context {
 // nested extraction as well, without any global registry:
 //
 //	q := query.New(query.OptionsFromContext(ctx)...).Key("nested")
+//
+// The returned slice is a copy: appending to it or mutating it in place
+// cannot affect other extractors in the same extraction.
 func OptionsFromContext(ctx context.Context) []Option {
 	if opts, ok := ctx.Value(optionsKey{}).([]Option); ok {
-		return opts
+		return slices.Clone(opts)
 	}
 	return nil
 }

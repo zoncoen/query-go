@@ -345,3 +345,73 @@ func TestOptionsFromContext(t *testing.T) {
 		t.Fatalf("expected nil outside an extraction, got %v", opts)
 	}
 }
+
+// explainedAbsence wraps ErrNotFound with a diagnostic, the way a blocking
+// extractor would explain why the element is absent.
+type explainedAbsence struct{}
+
+func (e *explainedAbsence) ExtractByIndex(_ context.Context, _ int) (any, error) {
+	return nil, fmt.Errorf("stream ended after 3 messages: %w", ErrNotFound)
+}
+
+func TestQuery_Extract_NotFoundPreservesCause(t *testing.T) {
+	_, err := New().Key("messages").Index(3).Extract(context.Background(), map[string]any{
+		"messages": &explainedAbsence{},
+	})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if got, expect := err.Error(), `".messages[3]" not found`; got != expect {
+		t.Errorf("the message must stay stable: expected %q but got %q", expect, got)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Error("expected errors.Is(err, ErrNotFound) to be true")
+	}
+	var nfe *NotFoundError
+	if !errors.As(err, &nfe) {
+		t.Fatal("expected *NotFoundError")
+	}
+	if nfe.Err == nil || !strings.Contains(nfe.Err.Error(), "stream ended after 3 messages") {
+		t.Errorf("expected the extractor's diagnostic to be preserved, got %v", nfe.Err)
+	}
+}
+
+func TestOptionsFromContext_ReturnsACopy(t *testing.T) {
+	// The extractor mutates the slice it got in place; a later fetch must
+	// still see the query's original options.
+	target := map[string]any{"a": &optionMutator{}}
+	got, err := New(CaseInsensitive()).Key("a").Key("b").Extract(context.Background(), target)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if got != "case-insensitive" {
+		t.Fatalf("in-place mutation leaked into a later OptionsFromContext: got %v", got)
+	}
+}
+
+// optionMutator overwrites the options slice it receives, then checks
+// whether a fresh fetch still carries the original CaseInsensitive option.
+type optionMutator struct{}
+
+func (e *optionMutator) ExtractByKey(ctx context.Context, key string) (any, error) {
+	if key != "b" {
+		return nil, ErrNotFound
+	}
+	if opts := OptionsFromContext(ctx); len(opts) > 0 {
+		opts[0] = func(q *Query) {} // hostile in-place mutation
+	}
+	probe := New(OptionsFromContext(ctx)...)
+	if probe.caseInsensitive {
+		return "case-insensitive", nil
+	}
+	return "lost", nil
+}
+
+func TestQuery_Extractors_ReturnsACopy(t *testing.T) {
+	q := New().Key("a").Index(0)
+	es := q.Extractors()
+	es[0] = nil
+	if _, err := q.Extract(context.Background(), map[string][]string{"a": {"x"}}); err != nil {
+		t.Fatalf("mutating the returned slice must not corrupt the query: %s", err)
+	}
+}

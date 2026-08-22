@@ -1,6 +1,6 @@
 module github.com/zoncoen/query-go/extractor/yaml
 
-go 1.21.0
+go 1.23
 
 toolchain go1.24.1
 

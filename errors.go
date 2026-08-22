@@ -24,6 +24,12 @@ type NotFoundError struct {
 	// FailedAt is the prefix of the query up to and including the extractor
 	// that did not match, e.g. ".a.b" when ".a.b.c" failed at "b".
 	FailedAt string
+	// Err is the error reported by the extractor that did not match. It
+	// preserves the diagnostic of an extractor that wrapped ErrNotFound
+	// (e.g. "stream ended after 3 messages: not found") and, when the
+	// extractor ran a sub-query, the inner *NotFoundError. It is exposed
+	// via Unwrap, not via Error, so the message stays stable.
+	Err error
 }
 
 // Error implements the error interface.
@@ -35,4 +41,9 @@ func (e *NotFoundError) Error() string {
 // errors.Is(err, ErrNotFound) matches a *NotFoundError.
 func (e *NotFoundError) Is(target error) bool {
 	return target == ErrNotFound
+}
+
+// Unwrap returns the extractor's original error.
+func (e *NotFoundError) Unwrap() error {
+	return e.Err
 }
