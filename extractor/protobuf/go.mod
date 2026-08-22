@@ -8,5 +8,3 @@ require (
 	github.com/zoncoen/query-go/v2 v2.0.0
 	google.golang.org/protobuf v1.36.12
 )
-
-require github.com/pkg/errors v0.9.1 // indirect
