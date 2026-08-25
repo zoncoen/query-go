@@ -7,8 +7,8 @@ import (
 
 	"github.com/zoncoen/query-go/v2"
 
-	protobufextractor "github.com/zoncoen/query-go/extractor/protobuf"
-	testpb "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb"
+	protobufextractor "github.com/zoncoen/query-go/extractor/protobuf/v2"
+	testpb "github.com/zoncoen/query-go/extractor/protobuf/v2/testdata/gen/testpb"
 )
 
 func ExampleExtractFunc() {

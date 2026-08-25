@@ -3,7 +3,7 @@ syntax = "proto3";
 package com.github.zoncoen.querygo.extractor.protobuf;
 
 
-option go_package = "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb;testpb";
+option go_package = "github.com/zoncoen/query-go/extractor/protobuf/v2/testdata/gen/testpb;testpb";
 
 message OneofMessage {
     oneof value {

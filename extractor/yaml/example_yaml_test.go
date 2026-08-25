@@ -8,7 +8,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/zoncoen/query-go/v2"
 
-	yamlextractor "github.com/zoncoen/query-go/extractor/yaml"
+	yamlextractor "github.com/zoncoen/query-go/extractor/yaml/v2"
 )
 
 func ExampleMapSliceExtractFunc() {
