@@ -1,4 +1,4 @@
-module github.com/zoncoen/query-go/extractor/protobuf
+module github.com/zoncoen/query-go/extractor/protobuf/v2
 
 go 1.23
 

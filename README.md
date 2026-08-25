@@ -27,7 +27,11 @@ that interrupted a blocking extractor.
 
 ## Migrating from v1
 
-- The module path is `github.com/zoncoen/query-go/v2`.
+- The module path is `github.com/zoncoen/query-go/v2`. The extractor modules
+  moved with it: `github.com/zoncoen/query-go/extractor/yaml/v2` and
+  `github.com/zoncoen/query-go/extractor/protobuf/v2`. Their v1 paths keep the
+  v1 API — `extractor/yaml v0.3.0` and `extractor/protobuf v0.2.0` shipped the
+  v2 API under the v1 path by mistake and are retracted.
 - `Query.Extract` takes a `context.Context`; `ExtractContext` is gone.
 - The extractor interfaces are consolidated: `KeyExtractor` and
   `IndexExtractor` now take a context and return `(any, error)` — return

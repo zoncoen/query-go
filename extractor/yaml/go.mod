@@ -1,4 +1,4 @@
-module github.com/zoncoen/query-go/extractor/yaml
+module github.com/zoncoen/query-go/extractor/yaml/v2
 
 go 1.23
 

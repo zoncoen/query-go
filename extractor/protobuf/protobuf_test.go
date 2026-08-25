@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	testpb "github.com/zoncoen/query-go/extractor/protobuf/testdata/gen/testpb"
+	testpb "github.com/zoncoen/query-go/extractor/protobuf/v2/testdata/gen/testpb"
 	"github.com/zoncoen/query-go/v2"
 )
 
